@@ -1,0 +1,4 @@
+#! /usr/bin/env bash
+
+
+tasklist.exe | egrep "^git-.*exe|^git\.exe|^ssh\.exe" | awk '{print $2}' | xargs -n 1 taskkill /F /PID

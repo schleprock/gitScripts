@@ -1,0 +1,138 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+use threads;
+use Thread::Queue;
+
+use threads;
+use Thread::Queue;
+
+# create a shared queue
+my $queue = Thread::Queue->new();
+my $endOfQueueMarker = "ENDOFQUEUEMARKER";
+
+my $parallel = 0;
+my $pwd = getcwd();
+
+my @repos = ("buildtools",
+             "Ansys_CDU_nosync",
+             "Ansys_CDU_sync",
+             "thirdparty",
+             "thirdparty_opensrc",
+             "thirdparty_vob2",
+             "sj_thirdparty",
+             "simplorer",
+             "nextgen",
+             "ansoft",
+             "bostonvob");
+
+chomp(@repos);
+my $numRepos;
+foreach my $repo(@repos) {
+  $queue->enqueue($repo);
+  ++$numRepos;
+}
+for(my $count = 0; $count < $numRepos; ++$count) {
+  $queue->enqueue($endOfQueueMarker);
+}
+
+# figure out how many processors
+my $numProc;
+if(defined($parallel)) {
+  if($parallel == 0) {
+    $numProc = $ENV{NUMBER_OF_PROCESSORS};
+    if(defined($numProc)) {
+      print("$numProc processors detected\n");
+    } else {
+      print("cannot determine numb of processors, using 4\n");
+      $numProc = "4";
+    }
+  } else {
+    $numProc = $parallel;
+  }
+}
+if((!defined($numProc)) || ($numProc == 0)) {
+  $numProc = 1;
+}
+# create a thread per cpu up to numProc or numb of repos
+my @myThreads;
+for(my $count = "0"; (($count < $numProc) &&
+                      ($count < $numRepos)); ++$count) {
+  print("Creating queue $count\n");
+  $myThreads[$count] = threads->new(\&branch);
+}
+
+# wait for threads to finish
+$| = 1;
+my $done = "0";
+while(!$done) {
+  my $numReposLeft = "0";
+  $done = "1";
+  sleep("1");
+  for(my $count = 0; (($count < $numProc) && 
+                      ($count < $numRepos)); ++$count) {
+    if(!$myThreads[$count]->is_joinable()) {
+      ++$numReposLeft;
+      $done = "0";
+    }
+  }
+  print("$numReposLeft ");
+}
+
+# reap all the myThreads
+
+my $fail = "0";
+for(my $count = 0; (($count < $numProc) && 
+                    ($count < $numRepos)); ++$count) {
+  my $ret = $myThreads[$count]->join();
+  if($ret) {
+    print("\nERROR: rebase failed\n\n");
+    $fail = "1";
+  }
+}
+
+if(-f "/usr/bin/xmessage") {
+  my $cmd = "xmessage -center \"branch r15 completed in $pwd\"";
+  system($cmd);
+}
+print("SUCCESS: branch r15 completed in $pwd");
+exit 0;
+
+sub printHelp
+{
+  print"branch to r15\n";
+  exit;
+}
+
+sub branch {
+  my $error = "0";
+  my $done = "0";
+  while(!$done) {
+    my $repo = $queue->dequeue();
+    print("repo = $repo\n");
+    if(defined($repo) && ($repo ne $endOfQueueMarker)) {
+      print("\ncloning $repo\n");
+      my $dir = "$pwd/$repo";
+      if(! -d $dir) {
+        print("\n\nERROR: $dir does not exist\n\n");
+        ++$error;
+      } else {
+        my $cmd = "cd $dir; git fetch --all; git checkout r15";
+        print("cmd = $cmd\n");
+        if(system($cmd)) {
+          print("\n\nERROR: $cmd failed\n\n");
+          ++$error;
+        } else {
+          print("\nCommand $cmd, complete\n");
+        }
+      }
+    } else {
+      return $error;
+    }
+  }
+}

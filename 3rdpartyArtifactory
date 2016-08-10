@@ -1,0 +1,113 @@
+#! /usr/bin/env perl
+
+use strict;
+use Getopt::ArgvFile home=>1;
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+my $user;
+my $passwd;
+my $artUrl;
+my $debug;
+my $noXmessage;
+my $help;
+
+GetOptions("user=s" => \$user,
+           "passwd=s" => \$passwd,
+           "artUrl=s" => \$artUrl,
+           "debug" =>\$debug,
+           "noxmessage" =>\$noXmessage,
+           "help|?" => \$help,
+    );
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\nWrapper for ebu's artifactory tool. By default this script will read a config\n");
+  print("file: ~/.3rdpartyArtifactory , for comand line options set there. For example\n");
+  print("you can put:\n--user foo\n--passwd ...\n--artUrl http..\nIn the config file which\n");
+  print("the script will read first. If you put command line options, these will override\n");
+  print("whatever is in the config file.\n");
+  print("\n3rdpartyArtifactory [--user <user>] [--passwd <passwd>]\n");
+  print("\t[--artUrl <artifactory URL>] [--debug] [--noxmessage] [--help] \n");
+  exit(1);
+}
+
+if(!-f "/usr/bin/xmessage") {
+  $noXmessage = 1;
+}
+
+my $crappyEBUtool = "./bldtools/3rdparty-af/ebuartifact.sh";
+if(! -e $crappyEBUtool) {
+  print("\nERROR: cannot find ebu tool: $crappyEBUtool\n");
+  print("\tMake sure you are in the directory above the repo's\n");
+  exit(1);
+}
+chomp($user);
+chomp($passwd);
+chomp($artUrl);
+
+print("\nUsing username: $user\n");
+print("artifactory URL: $artUrl\n");
+
+print("Checking username/passwd as the crappy ebu tool does not do this\n");
+my $silent = " -s ";
+if($debug) {
+  $silent = " ";
+}
+my $cmd = "curl -k $silent -u ${user}:${passwd} $artUrl";
+my $output = qx/$cmd 2>&1/;
+if($?) {
+  print("ERROR: curl failed with the following output:\n\n");
+  print("$output\n\n");
+  exit(5);
+}
+if($debug) {
+  print("$cmd returned $output\n");
+}
+if($output =~ m/401/) {
+  if($output =~ m/Bad credentials/) {
+    print("\nERROR: bad credentails, check passwd\n\n");
+    exit(3);
+  } else {
+    print("\nERROR: Recieved 401 in output: \n");
+    print("$output\n\n");
+    exit(4);
+  }
+}
+
+
+print("running $crappyEBUtool\n\n");
+my $debugSwitch = " ";
+if($debug) {
+  $debugSwitch = " -d ";
+}
+my $cmd = "$crappyEBUtool -u $user -p $passwd -s $artUrl $debugSwitch";
+print("\nRunning command: \n$cmd\n\n");
+my $ret = system($cmd);
+print("\nCommand returned: $ret ...\n");
+my $cwd = getcwd();
+my $output = "SUCCESS: 3rdpartyArtifactory completed in ";
+if($ret != 0) {
+  $output = "FAILED: 3rdpartyArtifactory failed in ";
+  $ret = 1;
+  print("\n\n$output $cwd\n\n");
+  if(! $noXmessage) {
+    my $cmd = "xmessage -center \"${output} $cwd\"";
+  }
+  exit($ret);
+}
+print("\nFixing permissions...\n");
+$cmd = "chmod -R 775 3rdparty";
+my $res = system($cmd);
+$output = "SUCCESS: 3rdpartyArtifactory completed in $cwd";
+if($res)
+{
+  $output = "FAILED: failed to $cmd in $cwd";
+}
+if(! $noXmessage) {
+  my $cmd = "xmessage -center \"${output}\"";
+}
+print("\n\n$output\n\n");
+exit($res);

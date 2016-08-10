@@ -1,0 +1,33 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Cwd;
+use Cwd 'chdir';
+
+my $pwd = getcwd();
+my $cmd = "net use \"b:\" /delete /YES";
+system($cmd);
+system("whoami");
+$cmd = "net use \"b:\" \"\\\\\\burteamslnx\\\\burteamslnx\" \"/persistent:NO\"";
+print("exec'ing $cmd\n");
+system("$cmd");
+my $repoDir = "/cygdrive/b/wschilp/ansysdev/git/pittstashClone";
+if(!chdir($repoDir)) {
+  print("ERROR: cannot cd to $repoDir\n");
+  exit 1;
+}
+my $cwd = getcwd();
+print("cwd = $cwd\n\n");
+my $cmd = "~/scripts/gitScripts/gitFetch.pl -a -p --noxmessage";
+if(system($cmd)) {
+  print("ERROR: $cmd failed\n");
+  exit 2;
+}
+chdir($pwd);
+$cmd = "net use \"b:\" /delete /YES";
+system($cmd);
+print("SUCCESS\n");
+exit 0;
+
+  

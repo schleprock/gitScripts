@@ -1,0 +1,218 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+use threads;
+use Thread::Queue;
+use Time::HiRes qw(sleep);
+
+# create a shared queue
+my $queue = Thread::Queue->new();
+my $endOfQueueMarker = "ENDOFQUEUEMARKER";
+
+
+my $sourceRepoDir;
+my $destRepoDir;
+my $repo;
+my $useHardLinks;
+my $parallel;
+my $help;
+
+GetOptions("sourceRepoDir=s" => \$sourceRepoDir, #source repo, pittstash
+           "destRepoDir=s" => \$destRepoDir, #directory to clone into
+           "repo=s" => \$repo, #specific repo(s) to clone optional
+           "useHardLinks" => \$useHardLinks, #allow git to use hardlinks in .git
+           "parallel:i" => \$parallel, #run commands in parallel
+           "help|?" => \$help,
+    );
+
+if($help) {
+  printHelp();
+  exit;
+}
+
+if(!$sourceRepoDir) {
+  # $sourceRepoDir = "https://pitebustash.win.ansys.com:8443/scm/ebu";
+  $sourceRepoDir = "ssh://git\@pitebustash.win.ansys.com:7999/ebu";
+}
+if(!$destRepoDir) {
+  $destRepoDir = ".";
+}
+
+my $pwd = getcwd();
+if(!chdir($destRepoDir)) {
+  die "\n\nERROR: repo directory $destRepoDir does not exist\n\n";
+}
+$destRepoDir = getcwd();
+my $gitVersion = qx/git --version/;
+print("gitversion = $gitVersion\n");
+if($gitVersion =~ "msysgit")
+{
+  # for msysgit have to use dos path for dest repo
+  my $destRepoDos = qx/cygpath -m $destRepoDir/;
+  chomp($destRepoDos);
+  # strip out cygwin if it exists ...
+  $destRepoDos =~ s!cygwin/!!;
+  if(! -d "$destRepoDos") {
+    die "\n\nERROR: repo directory $destRepoDos does not exist\n\n";
+  }
+  $destRepoDir = $destRepoDos;
+}
+chdir($pwd);
+
+my @repos;
+if($repo) {
+  @repos = split(/,/,$repo);
+} else {
+  @repos = ("Ansys_CDU_nosync",
+            "Ansys_CDU_sync",
+            "CodeDV",
+            "Core_Addin",
+            "ansoft",
+            "bldtools",
+            "bostonvob",
+            "build",
+            "buildtools",
+            "core",
+            "multiport",
+            "nextgen",
+            "simplorer",
+            "simulation",
+            "ui");
+}
+chomp(@repos);
+print("\n**** NOTE: ignore \"igncr: invalid option name\" warning***\n\n");
+my $numRepos;
+foreach $repo(@repos) {
+  if(chdir("${pwd}/${repo}/.git")) {
+    print("\nNOTE: repo: $repo already exists\n.");
+  } else {
+    $queue->enqueue($repo);
+    ++$numRepos;
+  }
+}
+for(my $count = 0; $count < $numRepos; ++$count) {
+  $queue->enqueue($endOfQueueMarker);
+}
+
+# figure out how many processors
+my $numProc;
+if(!defined($parallel)) {
+  $parallel = 0;
+}
+if(defined($parallel)) {
+  if($parallel == 0) {
+    $numProc = $ENV{NUMBER_OF_PROCESSORS};
+    if(defined($numProc)) {
+      print("$numProc processors detected\n");
+    } else {
+      print("cannot determine numb of processors, using 4\n");
+      $numProc = "4";
+    }
+  } else {
+    $numProc = $parallel;
+  }
+}
+if((!defined($numProc)) || ($numProc == 0)) {
+  $numProc = 1;
+}
+# create a thread per cpu up to numProc or numb of repos
+my @myThreads;
+for(my $count = "0"; (($count < $numProc) &&
+                      ($count < $numRepos)); ++$count) {
+  print("Creating queue $count\n");
+  $myThreads[$count] = threads->new(\&cloneDir);
+  sleep(0.2);
+}
+
+# wait for threads to finish
+$| = 1;
+my $done = "0";
+while(!$done) {
+  my $numReposLeft = "0";
+  $done = "1";
+  sleep(1.5);
+  for(my $count = 0; (($count < $numProc) && 
+                      ($count < $numRepos)); ++$count) {
+    if(!$myThreads[$count]->is_joinable()) {
+      ++$numReposLeft;
+      $done = "0";
+    }
+  }
+  print("$numReposLeft ");
+}
+
+# reap all the myThreads
+
+my $fail = "0";
+for(my $count = 0; (($count < $numProc) && 
+                    ($count < $numRepos)); ++$count) {
+  my $ret = $myThreads[$count]->join();
+  if($ret) {
+    print("\n\nERROR: clone failed\n\n");
+    $fail = "1";
+  }
+}
+my $output = "Clone Successful";
+if($fail) {
+  $output = "ERROR: Clone Failed";
+}
+
+if(-f "/usr/bin/xmessage") {
+  my $cmd = "xmessage -center \"${output} in $destRepoDir\"";
+  system($cmd);
+}
+print("\n\n${output} in $destRepoDir\n\n");
+exit($fail);
+
+sub printHelp
+{
+  print"clone [--sourceRepoDir <dir>] [--destRepoDir <dir>] [--repo <repo>] [--useHardLinks] [--parallel <numbThreads] [--help|?]\n";
+  print"\t--repo: comma seperated list of repo's to clone\n";
+  exit;
+}
+
+sub cloneDir {
+  my $error = "0";
+  my $done = "0";
+  while(!$done) {
+    my $repo = $queue->dequeue();
+    #print("repo = $repo\n");
+    my $sshRepo = $repo;
+    if($repo eq "3rdparty") {
+      $sshRepo = "3rdparty_ssh";
+    }
+    if(defined($repo) && ($repo ne $endOfQueueMarker)) {
+      print("\ncloning $repo\n");
+      my $cmd = "git clone -v --progress --branch master \"${sourceRepoDir}/${sshRepo}.git\" \"${destRepoDir}/${repo}\"";
+      print("cmd = $cmd\n");
+      if(system($cmd)) {
+        print("\n\nERROR: $cmd failed\n\n");
+        ++$error;
+      } else {
+        print("\nCommand $cmd, complete\n");
+        print("testing for ${destRepoDir}/${repo}/.gitModules\n");
+        if(-e "${destRepoDir}/${repo}/.gitModules") {
+          print("initializing and updating $repo submodules\n");
+          my $here = "${destRepoDir}/${repo}";
+          my $cmd = "cd ${here}; gitUpdateSubmodules --noxmessage --timeoutTimeSeconds 0";
+          print("running cmd: $cmd\n");
+          if(system($cmd)) {
+            print("\n\nERROR: $cmd failed\n\n");
+            ++$error;
+          } else {
+            print("\nUpdate of submodules in $here complete\n");
+          }
+        } else {
+          print("did not find ${destRepoDir}/${repo}/.gitModules\n");
+        }
+      }
+    } else {
+      return $error;
+    }
+  }
+}

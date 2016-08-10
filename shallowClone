@@ -1,0 +1,174 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+use threads;
+use Thread::Queue;
+
+# create a shared queue
+my $queue = Thread::Queue->new();
+my $endOfQueueMarker = "ENDOFQUEUEMARKER";
+
+
+my $sourceRepoDir;
+my $destRepoDir;
+my $repo;
+my $parallel;
+my $notShallow;
+my $help;
+
+GetOptions("destRepoDir=s" => \$destRepoDir, #directory to clone into
+           "repo=s" => \$repo, #specific repo to clone optional
+           "parallel:i" => \$parallel, #run commands in parallel
+           "notShallow" => \$notShallow, # don't make a shallow clone
+           "help|?" => \$help,
+    );
+
+if($help) {
+  printHelp();
+  exit;
+}
+
+if(!$destRepoDir) {
+  $destRepoDir = ".";
+}
+
+my $pwd = getcwd();
+if(!chdir($destRepoDir)) {
+  die "\n\nERROR: repo directory $destRepoDir does not exist\n\n";
+}
+$destRepoDir = getcwd();
+my $destRepoDos = qx/cygpath -m $destRepoDir/;
+chomp($destRepoDos);
+chdir($pwd);
+
+$sourceRepoDir = "/cygdrive/w/ansysdev/git/pittstashClone";
+if(!chdir($sourceRepoDir)) {
+  die "\n\nERROR: source repo directory $sourceRepoDir does not exist\n\n";
+}
+$sourceRepoDir = getcwd();
+my $sourceRepoDos = qx/cygpath -m $sourceRepoDir/;
+chomp($sourceRepoDos);
+chdir($pwd);
+
+my @repos;
+if($repo) {
+  @repos = ("$repo");
+} else {
+  chdir($sourceRepoDir);
+  my @ls = qx/ls -1/;
+  chomp(@ls);
+  print("\nCloning the following repo's:\n");
+  foreach my $dir(@ls) {
+    if(chdir("${dir}/.git")) {
+      push(@repos, $dir);
+      print("\t$dir\n");
+      chdir($sourceRepoDir);
+    }
+  }
+  print("\n\n");
+}
+chomp(@repos);
+print("\n**** NOTE: ignore \"igncr: invalid option name\" warning***\n\n");
+my $numRepos;
+foreach $repo(@repos) {
+  $queue->enqueue($repo);
+  ++$numRepos;
+}
+for(my $count = 0; $count < $numRepos; ++$count) {
+  $queue->enqueue($endOfQueueMarker);
+}
+
+# figure out how many processors
+my $numProc;
+if(defined($parallel)) {
+  if($parallel == 0) {
+    $numProc = $ENV{NUMBER_OF_PROCESSORS};
+    if(defined($numProc)) {
+      print("$numProc processors detected\n");
+    } else {
+      print("cannot determine numb of processors, using 4\n");
+      $numProc = "4";
+    }
+  } else {
+    $numProc = $parallel;
+  }
+}
+if((!defined($numProc)) || ($numProc == 0)) {
+  $numProc = 1;
+}
+# create a thread per cpu up to numProc or numb of repos
+my @myThreads;
+for(my $count = "0"; (($count < $numProc) &&
+                      ($count < $numRepos)); ++$count) {
+  print("Creating queue $count\n");
+  $myThreads[$count] = threads->new(\&cloneDir);
+}
+
+# wait for threads to finish
+$| = 1;
+my $done = "0";
+while(!$done) {
+  my $numReposLeft = "0";
+  $done = "1";
+  sleep("1");
+  for(my $count = 0; (($count < $numProc) && 
+                      ($count < $numRepos)); ++$count) {
+    if(!$myThreads[$count]->is_joinable()) {
+      ++$numReposLeft;
+      $done = "0";
+    }
+  }
+  print("$numReposLeft ");
+}
+
+# reap all the myThreads
+
+my $fail = "0";
+for(my $count = 0; (($count < $numProc) && 
+                    ($count < $numRepos)); ++$count) {
+  my $ret = $myThreads[$count]->join();
+  if($ret) {
+    print("\nERROR: rebase failed\n\n");
+    $fail = "1";
+  }
+}
+
+if(-f "/usr/bin/xmessage") {
+  my $cmd = "xmessage -center \"Clone completed successfully in $destRepoDos\"";
+  system($cmd);
+}
+print("SUCCESS: Clone completed successfully in $destRepoDos");
+exit 0;
+
+sub printHelp
+{
+  print"clone [--sourceRepoDir <dir>] [--destRepoDir <dir>] [--repo <repo>] [--notShallow] [--parallel <numbThreads] [--help|?]\n";
+  exit;
+}
+
+sub cloneDir {
+  my $error = "0";
+  my $done = "0";
+  while(!$done) {
+    my $repo = $queue->dequeue();
+    #print("repo = $repo\n");
+    if(defined($repo) && ($repo ne $endOfQueueMarker)) {
+      print("\ncloning $repo\n");
+      my $cmd = "git clone file:///pittstashClone/${repo} \"${destRepoDos}/${repo}\" -v --progress --branch master --depth 1 ";
+      print("cmd = $cmd\n");
+      if(system($cmd)) {
+        print("\n\nERROR: $cmd failed\n\n");
+        ++$error;
+      } else {
+        print("\nCommand $cmd, complete\n");
+      }
+    } else {
+      return $error;
+    }
+  }
+}

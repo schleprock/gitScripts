@@ -1,0 +1,75 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+my $reposDir;
+my $noxmessage;
+my $help;
+
+GetOptions("reposDir=s" => \$reposDir,
+           "noxmessage" => \$noxmessage,
+           "help|?" => \$help);
+printHelp() if($help);
+
+sub printHelp {
+  print("\nfetchAllRepos [--reposDir <base dir of repos>] [--noxmessage]");
+  print(" [--help|?]\n");
+  print("\t--reposDir: dir of repos default /ansysdev/git\n");
+  print("\t--noxmessage: suppress xmessage\n\n");
+  exit;
+}
+
+my $pwd = getcwd();
+my $reposDir = "/ansysdev/git";
+if(!chdir($reposDir)) {
+  print("ERROR: cannot find repo's dir $reposDir\n\n");
+  exit 1
+}
+
+# find all the repo's
+my @dirs;
+my @ls = qx/ls -1/;
+chomp(@ls);
+foreach my $dir(@ls) {
+  if(chdir("${dir}/simplorer/.git")) {
+    push(@dirs, $dir);
+    chdir($reposDir);
+  }
+}
+if(@dirs eq "0") {
+  print("No repositories found in $reposDir\n\n");
+  exit 2;
+}
+
+foreach my $dir(@dirs) {
+  if(!chdir($dir)) {
+    print("ERROR: cannot chdir to $dir\n\n");
+    exit 3;
+  }
+  if(system("gitFetch.pl --noxmessage")) {
+    print("ERROR: gitFetch.pl in $dir failed\n\n");
+    exit 4;
+  }
+  chdir($reposDir);
+}
+if(!$noxmessage && (-f "/usr/bin/xmessage")) {
+  my $cmd = "xmessage -center \"fetchAllRepos successful in $reposDir\"";
+  system($cmd);
+}
+print("SUCCESS: fetchAllRepos in $reposDir\n\n");
+exit 0;
+
+
+sub exitError
+{
+  if(!$noxmessage && (-f "/usr/bin/xmessage")) {
+    my $cmd = "xmessage -center \"fetchAllRepos failed in $reposDir\"";
+    system($cmd);
+  }
+  print("FAILED: fetchAllRepos in $reposDir\n\n");
+  exit 1;
+}

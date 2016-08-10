@@ -1,0 +1,69 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+my $pwd = getcwd();
+
+my $branchName;
+my $noXmessage;
+my $help;
+
+GetOptions("branchName=s" => \$branchName,
+           "noXmessage" => \$noXmessage,
+           "help|?" => \$help);
+printHelp() if($help);
+
+if($branchName eq "") {
+  print("\nERROR: must provide a branch name\n");
+  printHelp();
+  exit(2);
+}
+
+my @repos;
+my $numRepos = "0";
+if(chdir(".git")) {
+  chdir($pwd);
+  push(@repos, $pwd);
+  ++$numRepos;
+} else {
+  my @ls = qx/ls -1/;
+  chomp(@ls);
+  foreach my $dir(@ls) {
+    if(chdir("${pwd}/${dir}/.git")) {
+      push(@repos, "${pwd}/${dir}");
+      ++$numRepos;
+      chdir($pwd);
+    }
+  }
+}
+print("numRepos = $numRepos\n");
+
+foreach my $repo(@repos) {
+  chdir($repo);
+  my $cmd = "git ls-remote origin $branchName | grep $branchName";
+  my $originBranch = qx/$cmd/;
+  if($originBranch eq "") {
+    print("\n$branchName not found on origin\n");
+  } else {
+    print("\n$branchName found on origin.\n");
+    print("Checking $branchName out in ${repo}\n");
+    $cmd = "git checkout $branchName";
+    if(system($cmd)) {
+      print("\nERROR: $cmd failed in repo $repo\n\n");
+      exit(1);
+    }
+  }
+}
+  
+sub printHelp {
+  print("\ngitCheckoutBranch --branchName <branchName> [--noXmessage]");
+  print(" [--help|?]\n");
+  print("\t--branchName: name of branch to checkout, required\n");
+  print("\t--noXmessage: suppress Xmessage\n");
+  print("\t--help|?: print help\n\n");
+  exit(0);
+}

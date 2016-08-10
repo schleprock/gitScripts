@@ -34,7 +34,7 @@ if(defined($j) && ($j != 0)) {
   $jSw = "-j $j";
 }
 
-my $cmd = "~/scripts/gitScripts/gitFetch.pl --pull --all --noxmessage";
+my $cmd = "~/gitScripts/gitFetch.pl --pull --all --noxmessage";
 $cmd = "$cmd $mergeMasterSw $jSw";
 my $res = system($cmd);
 print("\n$cmd returned $res\n");
@@ -51,7 +51,7 @@ if(chdir(".git")) {
   printAndExit();
 }
 
-$cmd = "~/scripts/gitScripts/3rdpartyArtifactory";
+$cmd = "~/gitScripts/3rdpartyArtifactory";
 $res = system($cmd);
 print("\n$cmd returned $res\n");
 if($res)

@@ -19,7 +19,7 @@ if(!chdir($repoDir)) {
 }
 my $cwd = getcwd();
 print("cwd = $cwd\n\n");
-my $cmd = "~/scripts/gitScripts/gitFetch.pl -a -p --noxmessage";
+my $cmd = "~/gitScripts/gitFetch.pl -a -p --noxmessage";
 if(system($cmd)) {
   print("ERROR: $cmd failed\n");
   exit 2;

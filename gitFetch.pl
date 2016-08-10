@@ -100,7 +100,7 @@ sub update
         print("testing for ${here}/.gitModules\n");
         if(-e "${here}/.gitModules") {
           print("updating $here submodules\n");
-          $cmd = "cd ${here}; ~/scripts/gitScripts/gitUpdateSubmodules --timeoutTimeSeconds $timeoutTimeSeconds --noxmessage";
+          $cmd = "cd ${here}; ~/gitScripts/gitUpdateSubmodules --timeoutTimeSeconds $timeoutTimeSeconds --noxmessage";
           print("running cmd: $cmd\n");
           if(system($cmd)) {
             print("\n\nERROR: $cmd failed\n\n");

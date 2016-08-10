@@ -19,7 +19,9 @@ my $all;
 my $timeoutTimeSeconds;
 my $noXmessage;
 my $j;
-my $mergeMaster; 
+my $mergeMaster;
+my $commitMerge;
+my $pushMerge;
 my $help;
 
 GetOptions("all" => \$all,
@@ -28,6 +30,8 @@ GetOptions("all" => \$all,
            "noxmessage" => \$noXmessage,
            "j:i" => \$j,
            "mergeMaster" => \$mergeMaster,
+           "commitMerge" => \$commitMerge,
+           "pushMerge" => \$pushMerge,
            "help|?" => \$help,
     );
 printHelp() if($help);
@@ -55,6 +59,8 @@ sub printHelp
   print("\t--all: fetch/pull all remotes\n");
   print("\t--mergeMaster: merge master into any repo's that are not on");
   print(" master\n");
+  print("\t--commitMerge: if there are automerged changes, commit them\n");
+  print("\t--pushMerge: if changes are automerged, push them\n");
   print("\t--noxmessage: suppresses xmessage notification\n\n");
   exit;
 }
@@ -129,17 +135,16 @@ sub update
             print("ERROR: $cmd failed in $here\n");
             return 3;
           }
-          # check to see if anything needs to be committed
-          $cmd = "cd ${here}; git status -s";
-          my $status = qx/$cmd/;
-          chomp($status);
-          if($status ne "") {
-            $cmd = "cd ${here}; git commit -m\"Merge remote-tracking branch";
-            $cmd = "$cmd 'origin/master' into $branch\"";
+          if($commitMerge) {
+            my $pushSw = " ";
+            if($pushMerge) {
+              $pushSw = "--push";
+            }
+            $cmd = "cd $here; commitAutoMerge $pushSw";
             if(system($cmd)) {
-              print("ERROR: $cmd failed in $here\n");
-              return 4;
-            } 
+              print("ERROR: commit failed in $here\n");
+              return 9;
+            }
           }
         } else {
           print("\nOn master\n");

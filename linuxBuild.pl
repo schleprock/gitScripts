@@ -59,7 +59,16 @@ if($clean) {
   $cleanSwitch = "--clean";
 }
 
-my $numbCPUs = `nproc`;
+
+my $numbCPUs = $ENV{NUMBER_OF_PROCESSORS};
+my $kernelName = `uname -s`;
+if("$kernelName" eq "Linux") {
+  $numbCPUs = `nproc`;
+}
+if(! defined($numbCPUs)) {
+  print("cannot determine numb of processors, using 4\n");
+  $numbCPUs = "4";
+}
 chomp($numbCPUs);
 print "\nINFO: using $numbCPUs cpu's\n";
 

@@ -140,7 +140,7 @@ sub update
             if($pushMerge) {
               $pushSw = "--push";
             }
-            $cmd = "cd $here; commitAutoMerge $pushSw";
+            $cmd = "cd $here; ~/gitScripts/commitAutoMerge $pushSw";
             if(system($cmd)) {
               print("ERROR: commit failed in $here\n");
               return 9;

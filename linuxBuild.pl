@@ -13,6 +13,7 @@ my $core;
 my $fortranLibs;
 my $designerUI;
 my $simpSolver;
+my $noxmessage;
 my $help;
 
 GetOptions("type=s" => \$buildType, # debug, release ...
@@ -22,6 +23,7 @@ GetOptions("type=s" => \$buildType, # debug, release ...
            "fortranLibs" => \$fortranLibs, # build only fortranlibs
            "designerUI" => \$designerUI, # build only designerUI
            "simpSolver" => \$simpSolver, # build only simplorer solver
+           "noxmessage" => \$noxmessage, # suppress xmessages
            "help|?" => \$help, # print out help
     );
 
@@ -82,7 +84,9 @@ if($all || $core) {
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");
-    system("xmessage -center \"ERROR: $cmd FAILED\"");
+    if(!$noxmessage) {
+      system("xmessage -center \"ERROR: $cmd FAILED\"");
+    }
     exit 1;
   }
 }
@@ -92,7 +96,9 @@ if($all || $fortranLibs) {
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");
-    system("xmessage -center \"ERROR: $cmd FAILED\"");
+    if(!$noxmessage) {
+      system("xmessage -center \"ERROR: $cmd FAILED\"");
+    }
     exit 1;
   }
 }
@@ -104,7 +110,9 @@ if($all || $designerUI) {
   print "\ncmd returned $ret\n";
   if($ret != 0) {
     print("ERROR: $cmd FAILED\n\n");
-    system("xmessage -center \"ERROR: $cmd FAILED\"");
+    if(!$noxmessage) {
+      system("xmessage -center \"ERROR: $cmd FAILED\"");
+    }
     exit 1;
   }
 }
@@ -114,11 +122,15 @@ if($simpSolver) {
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");
-    system("xmessage -center \"ERROR: $cmd FAILED\"");
+    if(!$noxmessage) {
+      system("xmessage -center \"ERROR: $cmd FAILED\"");
+    }
     exit 1;
   }
 }
 
 # if we got here, then it passed!
 print("SUCCESS: linux built!\n\n");
-system("xmessage -center \"SUCCESS: linux built!\"");
+if(!$noxmessage) {
+  system("xmessage -center \"SUCCESS: linux built!\"");
+}

@@ -61,7 +61,15 @@ foreach my $repo(@repos) {
   my $branch = qx@$cmd@;
   chomp($branch);
   print("\nbranch = $branch\n");
-  if("$branch" ne "master") {
+  $cmd = "cd ${dir}; git remote -v | grep \"tfs\.ansys\.com\" | head -1";
+  my $remote = qx/$cmd/;
+  chomp($remote);
+  my $mainBranch = "master";
+  if($remote ne "") {
+    print("\nremote is TFS\n");
+    $mainBranch = "develop";
+  }
+  if("$branch" ne "$mainBranch") {
     print("INFO: repo $repo is on branch: $branch\n");
     $cmd = "cd ${dir}; git status -s";
     my $status = qx/$cmd/;
@@ -70,7 +78,7 @@ foreach my $repo(@repos) {
       print("INFO: repo $repo has uncommitted changes:\n $status\n");
       print("INFO: committing changes in $repo to $branch\n");
       $cmd = "cd ${dir}; git commit -m\"Merge remote-tracking branch";
-      $cmd = "$cmd 'origin/master' into $branch\"";
+      $cmd = "$cmd 'origin/$mainBranch' into $branch\"";
       if(system($cmd)) {
         print("ERROR: $cmd failed in $repo\n");
         exit 4;

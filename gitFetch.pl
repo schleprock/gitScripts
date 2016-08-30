@@ -144,6 +144,7 @@ sub update
             return 2;
           }
           $cmd = "cd ${here}; git merge --no-commit origin/$mainBranch";
+          print("\nRunning cmd: $cmd\n\n");
           if(system($cmd)) {
             print("ERROR: $cmd failed in $here\n");
             return 3;

@@ -19,7 +19,7 @@ my $all;
 my $timeoutTimeSeconds;
 my $noXmessage;
 my $j;
-my $mergeMaster;
+my $mergeMainBranch;
 my $commitMerge;
 my $pushMerge;
 my $help;
@@ -29,7 +29,7 @@ GetOptions("all" => \$all,
            "timeoutTimeSeconds:i" => \$timeoutTimeSeconds,
            "noxmessage" => \$noXmessage,
            "j:i" => \$j,
-           "mergeMaster" => \$mergeMaster,
+           "mergeMainBranch" => \$mergeMainBranch,
            "commitMerge" => \$commitMerge,
            "pushMerge" => \$pushMerge,
            "help|?" => \$help,
@@ -55,10 +55,12 @@ sub printHelp
   print("\ngitFetch [--pull] [--all] [-help|?]\n");
   print("\t--pull: performs a pull, git fetch followed by git merge\n");
   print("\ttimeoutTimeSeconds: amount of time in seconds when it will give ");
-  print("up, if 0 no timeout\n");
+  print("up, if \n\t  0 no timeout\n");
   print("\t--all: fetch/pull all remotes\n");
-  print("\t--mergeMaster: merge master into any repo's that are not on");
-  print(" master\n");
+  print("\t--mergeMainBranch: merge the main development branch (TFS: ");
+  print("develop \n\t  Stash: master)");
+  print("into any repo's that are not on");
+  print(" the \n\t  main development branch\n");
   print("\t--commitMerge: if there are automerged changes, commit them\n");
   print("\t--pushMerge: if changes are automerged, push them\n");
   print("\t--noxmessage: suppresses xmessage notification\n\n");
@@ -118,19 +120,30 @@ sub update
           print("did not find ${here}/.gitModules\n");
         }
       }
-      if($mergeMaster) {
+      if($mergeMainBranch) {
+        my $mainBranch;
         $cmd = "cd ${here}; git branch | grep \"^\*\" | awk '{print \$2}'";
         my $branch = qx@$cmd@;
         chomp($branch);
         print("\nbranch = $branch\n");
-        if("$branch" ne "master") {
-          print("\nNot on master, merging...\n");
+        $cmd = "cd ${here}; git remote -v | grep \"tfs\.ansys\.com\" | head -1";
+        my $remote = qx/$cmd/;
+        chomp($remote);
+        if($remote ne "") {
+          print("\nremote is TFS\n");
+          $mainBranch = "develop";
+        } else {
+          print("not on tfs\n");
+          $mainBranch = "master";
+        }
+        if("$branch" ne "$mainBranch") {
+          print("\nNot on $mainBranch, merging...\n");
           $cmd = "cd ${here}; git fetch";
           if(system($cmd)) {
             print("ERROR: $cmd failed in $here\n");
             return 2;
           }
-          $cmd = "cd ${here}; git merge --no-commit origin/master";
+          $cmd = "cd ${here}; git merge --no-commit origin/$mainBranch";
           if(system($cmd)) {
             print("ERROR: $cmd failed in $here\n");
             return 3;
@@ -147,7 +160,7 @@ sub update
             }
           }
         } else {
-          print("\nOn master\n");
+          print("\nOn $mainBranch\n");
         }
       }
     } else {

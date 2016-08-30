@@ -37,7 +37,8 @@ if($help) {
 
 if(!$sourceRepoDir) {
   # $sourceRepoDir = "https://pitebustash.win.ansys.com:8443/scm/ebu";
-  $sourceRepoDir = "ssh://git\@pitebustash.win.ansys.com:7999/ebu";
+  # $sourceRepoDir = "ssh://git\@pitebustash.win.ansys.com:7999/ebu";
+  $sourceRepoDir = "ssh://tfs.ansys.com:22/tfs/ANSYS_EBU_Collection/EBU/_git";
 }
 if(!$destRepoDir) {
   $destRepoDir = ".";
@@ -71,7 +72,6 @@ if($repo) {
   @repos = ("Ansys_CDU_nosync",
             "Ansys_CDU_sync",
             "CodeDV",
-            "Core_Addin",
             "ansoft",
             "bldtools",
             "bostonvob",
@@ -188,7 +188,7 @@ sub cloneDir {
     }
     if(defined($repo) && ($repo ne $endOfQueueMarker)) {
       print("\ncloning $repo\n");
-      my $cmd = "git clone -v --progress --branch master \"${sourceRepoDir}/${sshRepo}.git\" \"${destRepoDir}/${repo}\"";
+      my $cmd = "git clone -v --progress --branch develop \"${sourceRepoDir}/${sshRepo}.git\" \"${destRepoDir}/${repo}\"";
       print("cmd = $cmd\n");
       if(system($cmd)) {
         print("\n\nERROR: $cmd failed\n\n");

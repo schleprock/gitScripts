@@ -43,6 +43,10 @@ if(chdir(".git")) {
   }
 }
 
+print("INFO: running git clean...\n\n");
+my $cleanCmd = "~/gitScripts/gitClean.pl";
+system($cleanCmd);
+
 foreach my $dir(@dirs) {
   chomp($dir);
   if("$dir" eq "Core_Addin") {

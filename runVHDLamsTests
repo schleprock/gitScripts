@@ -1,0 +1,171 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long qw(:config pass_through);
+use Cwd;
+use Cwd 'chdir';
+#$/ = "\r\n";
+
+my $xmessage = 1;
+my $message;
+
+if(! -f "/usr/bin/xmessage") {
+  $xmessage = 0;
+}
+
+my $pwv=`gitBaseDir.pl`;
+chomp($pwv);
+if ($pwv eq "** NONE **") {
+  $message = "ERROR: tests failed not in a git repo";
+  if($xmessage) {
+    system("xmessage -center \"$message\"");
+  }
+  print("\n$message\n\n");
+  exit(1);
+}
+my $pathToRepo=`gitBaseDir.pl --printPath`;
+chomp($pathToRepo);
+
+my $tmp = "/cygdrive/d/ansysdev/compilerTests/${pwv}Tests";
+my $type = "debug";
+my $flav;
+my $si = "C:\\Program Files\\AnsysEM\\AnsysEM17.0\\Win64";
+my $testcaseListFile = "testcase-list-file.txt";
+my $cppDiff = "";
+my $sortDiff;
+my $cppGen = "";
+my $repeat;
+my $j;
+my $help;
+
+GetOptions("tmpFile=s" => \$tmp, # tmp file location
+           "type=s" => \$type, # flavor
+           "si=s" => \$si, # si location
+           "testcaselistfile=s" => \$testcaseListFile, # testcase file
+           "j=i" => \$j, # parallel value
+           "cppDiff=s" => \$cppDiff,
+           "sortDiff" => \$sortDiff,
+           "cppGen=s" => \$cppGen,
+           "repeat=s" => \$repeat,
+           "help|?" => \$help, #print out help
+    );
+
+if($help) {
+  printHelp();
+}
+
+sub printHelp
+{
+  print "runTests [--tmpFile <tempfile location>] [--type <debug/release>]\n";
+  print "\t[--si <si location>] [--testcaselistfile <testcase file>]\n";
+  print "\t[-j <numb>] [--cppGen <dir>}\n";
+  print "\t[--cppDiff <dir>] [--sortDiff] [--repeat <numb>] [--help|?]\n\n";
+  print "\tdefault: --temp /d/ansysdev/compilerTests/${pwv}Tests";
+  print "--type debug\n\t";
+  print "--si C:\\Program Files\\AnsysEM\\AnsysEM16.0\\Win64";
+  print "\n\t-j $j\n\n";
+  exit;
+}
+
+if($ARGV[0]) {
+  print("ERROR: unknown option $ARGV[0]; aborting\n\n");
+  printHelp();
+  exit(1);
+}
+
+my $currentDir = getcwd();
+my $compileOnlyDir = "${pathToRepo}/simplorer/Tests/New_VHDL/testcases/compile_only";
+if(!chdir($compileOnlyDir)) {
+  $message = "ERROR: could not cd to $compileOnlyDir";
+  if($xmessage) {
+    system("xmessage -center \"$message\"");
+  }
+  print("\n$message\n\n");
+  exit(1);
+}
+
+if($type eq "release") {
+  $flav = "64release";
+} else {
+  $flav = "64debug";
+}
+
+# figure out how many processors
+if(!defined($j)) {
+  $j = $ENV{NUMBER_OF_PROCESSORS};
+  if(defined($j)) {
+    print("$j processors detected\n");
+  } else {
+    print("cannot determine numb of processors, using 4\n");
+    $j = "4";
+  }
+}
+
+my $cppGenSw = "";
+if($cppGen) {
+  $cppGenSw = "-cppGen $cppGen";
+}
+my $cppDiffSw = "";
+if($cppDiff) {
+  $cppDiffSw = "-cppDiff $cppDiff";
+}
+my $sortDiffSw = "";
+if($sortDiff) {
+  $sortDiffSw = "-sortDiff";
+}
+my $repeatVal = 1;
+if($repeat) {
+  $repeatVal = $repeat;
+}
+
+if(! -d "$tmp") {
+  print("$tmp does not exist, creating ...\n");
+  my @dirs = split("/",$tmp);
+  chomp(@dirs);
+  my $fullDir;
+  foreach my $dir(@dirs) {
+    if($dir) {
+      print("dir = $dir\n");
+      my $newFullDir = "${fullDir}/${dir}";
+      if(! -d "$newFullDir") {
+        if(!chdir("$fullDir")) {
+          print("ERROR: cannot cd to $fullDir\n");
+          exit(1);
+        }
+        system("cmd /C md $dir") == 0 or
+            die ("ERROR: cannot mkdir $dir in $fullDir\n");
+      }
+      $fullDir=$newFullDir;
+    }
+  }
+}
+
+my $cmd = "perl ./run-tests.pl -tmp $tmp -flav $flav -si \"${si}\" -tf $testcaseListFile -d -j $j $cppDiffSw $sortDiffSw $cppGenSw 2>&1";
+my $cwd = cwd();
+print("\ncwd = $cwd\n");
+print("\n\nrunning cmd: $cmd\n\n");
+my $failed = 0;
+my $count = 0;
+while($count < $repeatVal) {
+  if(system($cmd) != 0) {
+    $failed = 1;
+  }
+  print("loop $count\n");
+  $count = $count + 1;
+}
+if($failed) {
+  $message = "FAILED: tests $cmd failed.";
+  if($xmessage) {
+    system("xmessage -center \"$message\"");
+  }
+  print("\n$message\n\n");
+  exit(1);
+}
+$message = "PASSED: tests $cmd passed.";
+if($xmessage) {
+  system("xmessage -center \"$message\"");
+}
+print("\n$message\n\n");
+exit 0;
+

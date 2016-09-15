@@ -8,6 +8,25 @@ use Cwd 'chdir';
 use File::Basename;
 
 $/ = "\r\n";
+my $printPath;
+my $help;
+
+GetOptions("printPath" => \$printPath,
+           "help|?" => \$help
+    );
+
+if($help) {
+  printHelp();
+}
+
+sub printHelp
+{
+  print"gitBaseDir [--printPath] [--help|?]\n";
+  print"\tprintPath: print path to git repo, default is to print\n";
+  print"\t\trepo base directory name\n";
+  print"\thelp: print help\n\n";
+  exit;
+}
 
 my $currentDir = getcwd();
 
@@ -19,5 +38,9 @@ if("$topLevel" eq "") {
 my $path = dirname($topLevel);
 my $topLevel = basename($path);
 
-print("$topLevel");
+if($printPath) {
+  print("$path\n");
+} else {
+  print("$topLevel\n");
+}
 exit 0;

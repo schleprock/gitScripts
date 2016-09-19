@@ -121,49 +121,52 @@ sub update
         }
       }
       if($mergeMainBranch) {
-        my $mainBranch;
-        $cmd = "cd ${here}; git branch | grep \"^\*\" | awk '{print \$2}'";
-        my $branch = qx@$cmd@;
-        chomp($branch);
-        print("\nbranch = $branch\n");
-        $cmd = "cd ${here}; git remote -v | grep \"tfs\.ansys\.com\" | head -1";
-        my $remote = qx/$cmd/;
-        chomp($remote);
-        if($remote ne "") {
-          print("\nremote is TFS\n");
-          $mainBranch = "develop";
+        if("$dir" eq "buildtools") {
+          print("\nINFO: skipping merge of $dir\n");
         } else {
-          print("not on tfs\n");
-          $mainBranch = "master";
-        }
-        if("$branch" ne "$mainBranch") {
-          print("\nNot on $mainBranch, merging...\n");
-          $cmd = "cd ${here}; git fetch";
-          if(system($cmd)) {
-            print("ERROR: $cmd failed in $here\n");
-            return 2;
+          my $mainBranch;
+          $cmd = "cd ${here}; git branch | grep \"^\*\" | awk '{print \$2}'";
+          my $branch = qx@$cmd@;
+          chomp($branch);
+          print("\nbranch = $branch\n");
+          $cmd = "cd ${here}; git remote -v | grep \"tfs\.ansys\.com\" | ";
+          $cmd = "$cmd head -1";
+          my $remote = qx/$cmd/;
+          chomp($remote);
+          if($remote ne "") {
+            print("\nremote is TFS\n");
+            $mainBranch = "develop";
+          } else {
+            print("not on tfs\n");
+            $mainBranch = "master";
           }
-          $cmd = "cd ${here}; git merge --no-commit origin/$mainBranch";
-          print("\nRunning cmd: $cmd\n\n");
-          if(system($cmd)) {
-            print("ERROR: $cmd failed in $here\n");
-            return 3;
-          }
-          if($commitMerge) {
-            my $pushSw = " ";
-            if($pushMerge) {
-              $pushSw = "--push";
-            }
-            $cmd = "cd $here; ~/gitScripts/commitAutoMerge $pushSw";
+          if("$branch" ne "$mainBranch") {
+            print("\nNot on $mainBranch, merging $dir...\n");
+            $cmd = "cd ${here}; git fetch";
             if(system($cmd)) {
-              print("ERROR: commit failed in $here\n");
-              return 9;
+              print("ERROR: $cmd failed in $here\n");
+              return 2;
+            }
+            $cmd = "cd ${here}; git merge --no-commit origin/$mainBranch";
+            print("\nRunning cmd: $cmd in $here\n\n");
+            if(system($cmd)) {
+              print("ERROR: $cmd failed in $here\n");
+              return 3;
+            }
+            if($commitMerge) {
+              my $pushSw = " ";
+              if($pushMerge) {
+                $pushSw = "--push";
+              }
+              $cmd = "cd $here; ~/gitScripts/commitAutoMerge $pushSw";
+              if(system($cmd)) {
+                print("ERROR: commit failed in $here\n");
+                return 9;
+              }
             }
           }
-        } else {
-          print("\nOn $mainBranch\n");
-        }
-      }
+        } 
+      } 
     } else {
       return $error;
     }

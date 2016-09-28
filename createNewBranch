@@ -1,0 +1,71 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+
+my $command;
+my $help;
+
+GetOptions("help|?" => \$help,
+    );
+
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\ncreateNewBranch [-help|?] <branch name>\n");
+  print("\n\tThis script will create a new branch, \"branch name\", push ");
+  print("it to origin\n\tand ");
+  print("set up tracking only if the branch does not already exist.\n\n");
+  exit;
+}
+
+printHelp() if($help);
+
+if(! $ARGV[0]) {
+  print("\n\nERROR: no branch name given.\n");
+  printHelp();
+}
+my $branch = $ARGV[0];
+
+my $pwd = getcwd();
+
+if(!chdir(".git")) {
+  print("\n\nERROR: not in a git repository\n\n");
+  exit 1;
+}
+chdir($pwd);
+
+my $currentBranch = qx/git symbolic-ref --short HEAD/;
+chomp($currentBranch);
+if(lc($currentBranch) eq lc($branch)) {
+  print("$branch already exists (NOTE: names are case insensitive). \n\n");
+  exit;
+}
+
+my $cmd = "git branch -r | grep -i \"origin/${branch}\$\"";
+my $output = qx/$cmd/;
+chomp($output);
+if($output) {
+    print("\nremote branch origin/$branch already exists (NOTE: names are ");
+    print("case insensitive).\n\n");
+    exit;
+}
+
+$cmd = "git checkout -b $branch";
+if(system($cmd)) {
+  print("ERROR: $cmd failed\nexiting\n\n");
+  exit 3;
+}
+$cmd = "git push -u origin $branch";
+if(system($cmd)) {
+  print("ERROR: $cmd failed\nexiting\n\n");
+  exit 4;
+}
+$cmd = "git branch -vv";
+system($cmd);
+print("\nSUCCESS: $branch created and pushed to origin\n\n");

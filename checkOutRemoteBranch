@@ -1,0 +1,79 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+
+my $command;
+my $help;
+
+GetOptions("help|?" => \$help,
+    );
+
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\ncheckOutRemoteBranch [-help|?] <branch name>\n");
+  print("\n\tThis script will checkout the remote branch with \"");
+  print("branch name\" \n\tif it exists in any of the repos.\n");
+  print("\tIf the remote branch does not exist in the repo, the script ");
+  print("will\n\tcheckout develop. NOTE: this script does NOT update ");
+  print("the repo but does\n\tdo a fetch\n\n");
+  exit;
+}
+
+printHelp() if($help);
+
+if(! $ARGV[0]) {
+  print("\n\nERROR: no branch name given.\n");
+  printHelp();
+}
+my $branch = $ARGV[0];
+
+my $pwd = getcwd();
+my @dirs;
+if(chdir(".git")) {
+  chdir($pwd);
+  push(@dirs, ".");
+} else {
+  my @ls = qx/ls -1/;
+  chomp(@ls);
+  foreach my $dir(@ls) {
+    if(chdir("${dir}/.git")) {
+      push(@dirs, $dir);
+      chdir($pwd);
+    }
+  }
+}
+
+print("\nChecking out branch $branch where it exists\n\n");
+foreach my $dir(@dirs) {
+  chdir($dir) or die("\nERROR: could not chdir to $dir.\n\n");
+  my $currentBranch = qx/git symbolic-ref --short HEAD/;
+  chomp($currentBranch);
+  if($currentBranch eq $branch) {
+    print("$dir is already on $branch. skipping...\n\n");
+    chdir($pwd);
+    next;
+  }
+  print("Fetching all remote branches for $dir\n");
+  my $cmd = "git fetch --progress";
+  system($cmd) == 0 or die("\nERROR: could not fetch from $dir\n\n");
+  $cmd = "git branch -r | grep \"origin/${branch}\$\"";
+  my $output = qx/$cmd/;
+  chomp($output);
+  if(!$output) {
+    print("\n$dir does not have remote branch $branch. skipping...\n\n");
+    chdir($pwd);
+    next;
+  }
+  print("$dir is currently on $currentBranch, checking out $branch\n");
+  $cmd = "git checkout $branch";
+  system($cmd) == 0 or die("\nERROR: could not checkout $branch\n\n");
+  print("$dir successfully checked out $branch\n\n");
+  chdir($pwd);
+}

@@ -26,7 +26,8 @@ GetOptions("noxmessage" => \$noXmessage,
            "j:i" => \$j,
            "timeoutTimeSeconds:i" => \$timeoutTimeSeconds,
            "help|?" => \$help,
-    );
+    ) or printHelp();
+
 printHelp() if($help);
 
 my $startTime = time();
@@ -75,7 +76,7 @@ sub printHelp
   print("\ttimeoutTimeSeconds: amount of time in seconds when it will give up\n");
   print("\t\tif 0 then no timeout\n");
   print("\t--noxmessage: suppresses xmessage notification\n\n");
-  exit(0);
+  exit 1;
 }
 
 sub update

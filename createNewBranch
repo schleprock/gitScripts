@@ -11,7 +11,7 @@ my $command;
 my $help;
 
 GetOptions("help|?" => \$help,
-    );
+    ) or printHelp();
 
 printHelp() if($help);
 
@@ -21,7 +21,7 @@ sub printHelp
   print("\n\tThis script will create a new branch, \"branch name\", push ");
   print("it to origin\n\tand ");
   print("set up tracking only if the branch does not already exist.\n\n");
-  exit;
+  exit 1;
 }
 
 printHelp() if($help);

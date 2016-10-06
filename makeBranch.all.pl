@@ -20,11 +20,10 @@ GetOptions("branchName=s" => \$branchName,
            "delete=s" => \$delete,
            "fetch" => \$fetch,
            "help|?" => \$help,
-    );
+    ) or printHelp();
 
 if($help) {
   printHelp();
-  exit;
 }
 
 sub printHelp
@@ -37,6 +36,7 @@ sub printHelp
   print("\t--delete: delete a branch either local, remote or both\n");
   print("\t--prepend: optional prepend\n");
   print("\t--fetch: perform a fetch before doing commands\n\n");
+  exit 1;
 }
 
 if(!$branchName) {

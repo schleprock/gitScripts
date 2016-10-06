@@ -12,7 +12,7 @@ my $help;
 
 GetOptions("push" => \$push,
            "help|?" => \$help,
-    );
+    ) or printHelp();
 
 printHelp() if($help);
 
@@ -21,7 +21,7 @@ sub printHelp
   print("\ncommitAutoMerge [--push] [--help|?]\n");
   print("\t--push: push commit, default is just commit\n");
   print("\t--help|?: print help\n\n");
-  exit;
+  exit 1;
 }
 
 # find all repo's

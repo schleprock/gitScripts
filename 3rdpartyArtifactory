@@ -19,7 +19,8 @@ GetOptions("user=s" => \$user,
            "debug" =>\$debug,
            "noxmessage" =>\$noXmessage,
            "help|?" => \$help,
-    );
+    ) or printHelp();
+
 printHelp() if($help);
 
 sub printHelp

@@ -33,7 +33,8 @@ GetOptions("all" => \$all,
            "commitMerge" => \$commitMerge,
            "pushMerge" => \$pushMerge,
            "help|?" => \$help,
-    );
+    ) or printHelp();
+
 printHelp() if($help);
 
 my $startTime = time();
@@ -64,7 +65,7 @@ sub printHelp
   print("\t--commitMerge: if there are automerged changes, commit them\n");
   print("\t--pushMerge: if changes are automerged, push them\n");
   print("\t--noxmessage: suppresses xmessage notification\n\n");
-  exit;
+  exit 1;
 }
 
 sub update

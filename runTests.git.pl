@@ -50,9 +50,13 @@ GetOptions("tmpFile=s" => \$tmp, # tmp file location
            "repeat=s" => \$repeat,
            "runSingleCompiler" => \$runSingleCompiler,
            "help|?" => \$help, #print out help
-    );
+    ) or printHelp();
 
 if($help) {
+  printHelp();
+}
+
+sub printHelp {
   print "runTests [--tmpFile <tempfile location>] [--flav <debug/release>]\n";
   print "\t[--si <si location>] [--testcaselistfile <testcase file>]\n";
   print "\t[-j <numb>] [--cppGen <dir>} [--runSingleCompiler] \n";
@@ -61,7 +65,7 @@ if($help) {
   print "--flav 64debug\n\t";
   print "--si C:\\Program Files\\AnsysEM\\AnsysEM16.0\\Win64";
   print "\n\t-j $j\n\n";
-  exit;
+  exit 1;
 }
 
 my $cppGenSw = "";

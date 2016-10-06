@@ -28,11 +28,11 @@ GetOptions("sourceRepoDir=s" => \$sourceRepoDir, #source repo, pittstash
            "useHardLinks" => \$useHardLinks, #allow git to use hardlinks in .git
            "parallel:i" => \$parallel, #run commands in parallel
            "help|?" => \$help,
-    );
+    ) or printHelp();
 
 if($help) {
   printHelp();
-  exit;
+  exit 1;
 }
 
 if(!$sourceRepoDir) {

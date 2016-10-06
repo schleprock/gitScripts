@@ -22,13 +22,12 @@ GetOptions("command=s" => \$command, #command to run
            "parallel:i" => \$parallel, #run commands in parallel
            "noxmessage" => \$noXmessage, #disable xmessage
            "help|?" => \$help,
-    );
+    ) or printHelp();
+
 printHelp() if($help);
 
-printHelp() if(!$command);
-
 sub printHelp {
-  print("gitRunCmd --command <cmd> [--parallel [numb]][--help|?]\n");
+  print("\ngitRunCmd --command <cmd> [--parallel [numb]][--help|?]\n");
   print("\t--parallel [numb]: run commands in parallel\n");
   print("\t--command: command to run in each directory\n\n");
   exit;

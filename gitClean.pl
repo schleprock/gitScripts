@@ -22,14 +22,15 @@ my $cleanLinks;
 
 GetOptions("cleanLinks" => \$cleanLinks,
            "help|?" => \$help,
-    );
+    ) or printHelp();
+
 printHelp() if($help);
 
 sub printHelp
 {
   print("\ngitClean [--cleanlinks ] [-help|?]\n");
   print("\t--cleanLinks: delete old symlinks\n");
-  exit;
+  exit 1;
 }
 
 sub clean {

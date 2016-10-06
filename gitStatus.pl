@@ -15,7 +15,8 @@ GetOptions("untracked" => \$untracked, #show untracked files/dirs
            "ignored" => \$ignored, #show ignored files/dirs
            "all" => \$all, #show untracked, ignored files/dirs
            "help|?" => \$help,
-    );
+    ) or printHelp();
+
 printHelp() if($help);
 
 sub printHelp
@@ -24,7 +25,7 @@ sub printHelp
   print("\t--untracked: show untracked files\n");
   print("\t--ignored: show ignored files\n");
   print("\t--all: show untracked and ignored files/dirs\n");
-  exit;
+  exit 1;
 }
 
 my $pwd = getcwd();

@@ -20,7 +20,7 @@ my $help;
 GetOptions("pull" => \$pull,
            "noxmessage" => \$noXmessage,
            "help|?" => \$help,
-    );
+    ) or printHelp();
 printHelp() if($help);
 
 my $gitCmd = "fetch";
@@ -33,7 +33,7 @@ sub printHelp
   print("\ngitFetch [--pull] [-help|?]\n");
   print("\t--pull: performs a pull, git fetch followed by git merge\n");
   print("\t--noxmessage: suppresses xmessage notification\n\n");
-  exit;
+  exit 1;
 }
 
 sub update

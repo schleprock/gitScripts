@@ -13,7 +13,7 @@ my $help;
 
 GetOptions("printPath" => \$printPath,
            "help|?" => \$help
-    );
+    ) or printHelp();
 
 if($help) {
   printHelp();
@@ -25,7 +25,7 @@ sub printHelp
   print"\tprintPath: print path to git repo, default is to print\n";
   print"\t\trepo base directory name\n";
   print"\thelp: print help\n\n";
-  exit;
+  exit 1;
 }
 
 my $currentDir = getcwd();

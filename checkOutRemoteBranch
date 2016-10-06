@@ -11,7 +11,7 @@ my $command;
 my $help;
 
 GetOptions("help|?" => \$help,
-    );
+    ) or printHelp();
 
 printHelp() if($help);
 
@@ -23,7 +23,7 @@ sub printHelp
   print("\tIf the remote branch does not exist in the repo, the script ");
   print("will\n\tcheckout develop. NOTE: this script does NOT update ");
   print("the repo but does\n\tdo a fetch\n\n");
-  exit;
+  exit 1;
 }
 
 printHelp() if($help);

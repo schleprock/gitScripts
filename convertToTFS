@@ -11,7 +11,8 @@ my $url = "ssh://tfs.ansys.com:22/tfs/ANSYS_EBU_Collection/EBU/_git";
 
 GetOptions("url=s" => \$url, #URL to use
            "help|?" => \$help,
-    );
+    ) or printHelp();
+
 printHelp() if($help);
 
 sub printHelp
@@ -19,7 +20,7 @@ sub printHelp
   print("\ngitStatus [--url <URL>] [--all] [-help|?]\n");
   print("\t--url: URL to use, currently set to: \n\t\t$url\n");
   print("\t--help: show this help...\n\n");
-  exit;
+  exit 1;
 }
 
 my $remoteCmd = "git remote set-url origin ${url}/";

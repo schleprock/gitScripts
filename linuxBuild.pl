@@ -25,7 +25,7 @@ GetOptions("type=s" => \$buildType, # debug, release ...
            "simpSolver" => \$simpSolver, # build only simplorer solver
            "noxmessage" => \$noxmessage, # suppress xmessages
            "help|?" => \$help, # print out help
-    );
+    ) or printHelp();
 
 if($ARGV[0]) {
   print("ERROR: unknown option $ARGV[0]; aborting\n\n");
@@ -35,7 +35,6 @@ if($ARGV[0]) {
 
 if($help) {
   printHelp();
-  exit(0);
 }
 
 sub printHelp
@@ -49,6 +48,7 @@ sub printHelp
   print "\t--core/fortranlibs/designerUI/simpSolver only build that sln\n";
   print "\t--clean: invoke clean before each build\n";
   print "\t--help|?: print out this message\n\n";
+  exit 1;
 }
 
 my $all = 1;

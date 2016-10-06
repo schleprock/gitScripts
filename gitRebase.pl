@@ -15,12 +15,13 @@ GetOptions("path=s" => \$remotePath,
            "rebase" => \$rebase, #rebase to master
            "nopull" => \$nopull, #don't do a fetch/pull
            "help|?" => \$help,
-    );
+    ) or printHelp();
+
 printHelp() if($help);
 
 sub printHelp {
   print("\ngitRebase [--rebase] [--help|?]\n");
-  exit;
+  exit 1;
 }
 
 if(!$remotePath) {

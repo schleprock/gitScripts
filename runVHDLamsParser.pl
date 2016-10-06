@@ -18,7 +18,7 @@ GetOptions("repoSet=s" => \$repoSet,
            "dllDir=s" => \$dllDir,
            "tempDir=s" => \$tempDir,
            "help|?" => \$help,
-    );
+    ) or printHelp();
 
 if($help) {
   printHelp();

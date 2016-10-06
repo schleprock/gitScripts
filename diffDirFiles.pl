@@ -13,13 +13,14 @@ my $help;
 GetOptions("1=s" => \$firstDir,
            "2=s" => \$secondDir,
            "help|?" => \$help,
-    );
+    ) or printHelp();
+
 printHelp() if($help);
 
 sub printHelp
 {
   print("\ndiffDirFiles -1 <first dir> -2 <second dir> [-help|?]\n");
-  exit;
+  exit 1;
 }
 
 my $pwd = cwd();

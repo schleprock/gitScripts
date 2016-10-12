@@ -39,7 +39,18 @@ if(!-f "/usr/bin/xmessage") {
   $noXmessage = 1;
 }
 
-my $crappyEBUtool = "./bldtools/3rdparty-af/ebuartifact.sh";
+my $crappyEBUtool;
+if(-d "bldtools") {
+  # old bldtools stuff
+  $crappyEBUtool = "./bldtools/3rdparty-af/ebuartifact.sh";
+} elsif (-d "DevTools") {
+  $crappyEBUtool = "./DevTools/utilities/3rdparty-af/ebuartifact.sh";
+} else {
+  print("\nERROR: no tools directory, either bldtools or DevTools.\n\t");
+  print("\tMake sure you are in the directory above the repo's\n");
+  exit(5);
+}
+
 if(! -e $crappyEBUtool) {
   print("\nERROR: cannot find ebu tool: $crappyEBUtool\n");
   print("\tMake sure you are in the directory above the repo's\n");

@@ -5,7 +5,7 @@ use strict;
 use Getopt::Long;
 use Cwd;
 use Cwd 'chdir';
-$/ = "\r\n";
+
 
 my $pwv=`gitBaseDir.pl`;
 chomp($pwv);
@@ -15,6 +15,7 @@ if ($pwv eq "** NONE **") {
 my $currentDir = getcwd();
 my $compileOnlyDir = "/ansysdev/git/${pwv}/simplorer/Tests/New_VHDL/testcases/compile_only";
 if(!chdir($compileOnlyDir)) {
+  print("ERROR: could not cd to $compileOnlyDir\n");
   system("xmessage -center \"ERROR: could not cd to $compileOnlyDir\"");
   exit 1;
 }

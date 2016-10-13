@@ -80,7 +80,7 @@ if("$buildType" == "debug"){
 }
 
 if($all || $core) {
-  my $cmd = "./buildtools/scripts/build/BuildSln.pl --build ./build/OfficialSln/Core.sln --verbose --nparallel $numbCPUs $cleanSwitch --nokeep-going";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/Core.sln --verbose --nparallel $numbCPUs $cleanSwitch --nokeep-going";
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");
@@ -92,7 +92,7 @@ if($all || $core) {
 }
 
 if($all || $fortranLibs) {
-  my $cmd = "./buildtools/scripts/build/BuildSln.pl --build ./build/OfficialSln/FortranLibs.sln --verbose --nparallel $numbCPUs $cleanSwitch --nokeep-going";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/FortranLibs.sln --verbose --nparallel $numbCPUs $cleanSwitch --nokeep-going";
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");
@@ -104,7 +104,7 @@ if($all || $fortranLibs) {
 }
 
 if($all || $designerUI) {
-  my $cmd = "./buildtools/scripts/build/BuildSln.pl --build ./build/OfficialSln/Designer-UI.sln --verbose --nparallel $numbCPUs $cleanSwitch --nokeep-going";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/Designer-UI.sln --verbose --nparallel $numbCPUs $cleanSwitch --nokeep-going";
   print "\nexecing: $cmd\n\n";
   my $ret = system($cmd);
   print "\ncmd returned $ret\n";
@@ -118,7 +118,7 @@ if($all || $designerUI) {
 }
 
 if($simpSolver) {
-  my $cmd = "./buildtools/scripts/build/BuildSln.pl --build ./build/OfficialSln/SimplorerSolver.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/SimplorerSolver.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going";
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");

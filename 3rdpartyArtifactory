@@ -110,6 +110,25 @@ if($ret != 0) {
   }
   exit($ret);
 }
+my $modEncMan = "./simplorer/compiler/modelica/encryptedlibs.manifest";
+if(-f $modEncMan) {
+  print("\nGetting modelica encrypted libraries...\n");
+  # grab the modelon encrypted libraries
+  my $cmd = "$crappyEBUtool -u $user -p $passwd -s $artUrl $debugSwitch";
+  $cmd = "$cmd -m $modEncMan";
+  print("\nRunning cmd: $cmd\n");
+  my $ret = system($cmd);
+  if($ret != 0) {
+    $output = "FAILED: 3rdpartyArtifactory failed to extract ";
+    $output = "$output modelica encrypted libraries";
+    $ret = 1;
+    print("\n\n$output in \n\t$cwd\n\n");
+    if(! $noXmessage) {
+      my $cmd = "xmessage -center \"${output} $cwd\"";
+    }
+    exit($ret);
+  }
+}
 print("\nFixing permissions...\n");
 $cmd = "chmod -R 775 3rdparty";
 my $res = system($cmd);

@@ -8,7 +8,7 @@ use Cwd 'chdir';
 
 my $noxmessage;
 my $forceMerge;
-my $noMergeMainBranch;
+my $mergeMainBranch;
 my $noCommitMerge;
 my $pushMerge;
 my $j;
@@ -16,7 +16,7 @@ my $help;
 
 GetOptions("noxmessage" => \$noxmessage,
            "forceMerge" => \$forceMerge,
-           "noMergeMainBranch" => \$noMergeMainBranch,
+           "mergeMainBranch" => \$mergeMainBranch,
            "noCommitMerge" => \$noCommitMerge,
            "pushMerge" => \$pushMerge,
            "j:i" => \$j,
@@ -29,16 +29,16 @@ if($help) {
 
 sub printHelp
 {
-  print("\ngitUpdate [--noxmessage] [--noMergeMainBranch] [--j <int>] ");
+  print("\ngitUpdate [--noxmessage] [--mergeMainBranch] [--j <int>] ");
   print("[--noCommitMerge] \n\t\t[--pushMerge] [--forceMerge] [--help]\n\n");
   print("Update a set of repo's or just a single repo. Default is to\n");
   print("automerge any non-master branches with master unless this script\n");
   print("is run in a single repo (like simplorer).\n");
   print("\t--noxmessage: suppress xmessage\n");
   print("\t--forceMerge: do the merge even if in a repo\n");
-  print("\t--noMergeMainBranch: if a branch is not on main branch (master");
-  print("\n\t\tdevelop), don't merge. ");
-  print("Default is to merge master into\n\t\tbranch\n");
+  print("\t--mergeMainBranch: if a branch is not on main branch (master");
+  print("\n\t\tdevelop), merge it. ");
+  print("Default is to not merge master into\n\t\tbranch\n");
   print("\t--noCommitMerge: if there are automerged changes, don't commit ");
   print(" them.\n\t\t default behavior is to commit but not push\n");
   print("\t--pushMerge: if changes are automerged, push them.\n");
@@ -61,8 +61,10 @@ if($noCommitMerge) {
   $commitMergeSw = "";
   $pushMergeSw = " ";
 }
-my $mergeMainBranchSw = "--mergeMainBranch";
-if($noMergeMainBranch) {
+my $mergeMainBranchSw = " ";
+if($mergeMainBranch) {
+  $mergeMainBranchSw = "--mergeMainBranch";
+} else {
   $mergeMainBranchSw = " ";
   $commitMergeSw = " ";
   $pushMergeSw = " ";

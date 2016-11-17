@@ -8,6 +8,7 @@ use Cwd 'chdir';
 
 my $buildType = "debug";
 my $buildBits = 64;
+my $j;
 my $clean = 0;
 my $core;
 my $fortranLibs;
@@ -19,6 +20,7 @@ my $help;
 GetOptions("type=s" => \$buildType, # debug, release ...
            "clean" => \$clean, # clean build or not, default is not
            "bits=s" => \$buildBits, # numb bits, 32/64
+           "j=i" => \$j, # numb parallel builds
            "core" => \$core, #build on only core
            "fortranLibs" => \$fortranLibs, # build only fortranlibs
            "designerUI" => \$designerUI, # build only designerUI
@@ -72,15 +74,18 @@ if(! defined($numbCPUs)) {
   $numbCPUs = "4";
 }
 chomp($numbCPUs);
+if($j) {
+  $numbCPUs = $j;
+}
 print "\nINFO: using $numbCPUs cpu's\n";
 
 my $buildSwitch = "";
-if("$buildType" == "debug"){
+if("$buildType" eq "debug"){
   $buildSwitch = "--debug=full";
 }
 
 if($all || $core) {
-  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/Core.sln --verbose --nparallel $numbCPUs $cleanSwitch --nokeep-going";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/Core.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going";
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");
@@ -92,7 +97,7 @@ if($all || $core) {
 }
 
 if($all || $fortranLibs) {
-  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/FortranLibs.sln --verbose --nparallel $numbCPUs $cleanSwitch --nokeep-going";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/FortranLibs.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going";
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");
@@ -104,7 +109,7 @@ if($all || $fortranLibs) {
 }
 
 if($all || $designerUI) {
-  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/Designer-UI.sln --verbose --nparallel $numbCPUs $cleanSwitch --nokeep-going";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/Designer-UI.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going";
   print "\nexecing: $cmd\n\n";
   my $ret = system($cmd);
   print "\ncmd returned $ret\n";

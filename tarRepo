@@ -1,0 +1,170 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+
+my $j;
+my $help;
+my $noXmessage = 0;
+
+use threads;
+use Thread::Queue;
+
+# create a shared queue
+my $queue = Thread::Queue->new();
+my $endOfQueueMarker = "ENDOFQUEUEMARKER";
+my $tempDir = $ENV{TEMP};
+
+my $repoTarDir = "repoTarFiles";
+
+GetOptions("help|?" => \$help,
+           "j:i" => \$j,
+    ) or printHelp();
+
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\ntarRepo [-j <numb>] [-help|?]\n");
+  print("\n\tThis script will tar up all repo's in the directory and ");
+  print("store the files in $tempDir/$repoTarDir\n\n");
+  exit 1;
+}
+
+printHelp() if($help);
+my $pwd = getcwd();
+
+my $numRepos = "0";
+my @ls = qx/ls -1/;
+chomp(@ls);
+foreach my $dir(@ls) {
+  if(chdir("${dir}/.git")) {
+    $queue->enqueue("$dir");
+    ++$numRepos;
+    chdir($pwd);
+  }
+}
+print("numRepos = $numRepos\n");
+if($numRepos eq "0") {
+  print("No repositories found in $pwd\n\n");
+  exit 2;
+}
+
+# delete a repo dir in temp if it already exists
+if(!chdir($tempDir)) {
+  print("ERROR: cannot cd to $tempDir\n");
+  exit 2;
+}
+if(-d $repoTarDir) {
+  if(system("rm -r $repoTarDir")) {
+    print("ERROR: cannot rm $repoTarDir\n");
+    exit 3;
+  }
+}
+if(system("mkdir $repoTarDir")) {
+    print("\nERROR: unable to create $repoTarDir in $tempDir\n");
+    exit 4;
+}
+chdir($pwd);
+
+# figure out how many processors
+my $numProc = $ENV{NUMBER_OF_PROCESSORS};
+if(defined($j) && ($j != 0)) {
+  $numProc = $j;
+} else {
+  if(defined($numProc)) {
+    print("$numProc processors detected\n");
+  } else {
+    print("cannot determine numb of processors, using 4\n");
+    $numProc = "4";
+  }
+}
+
+if((!defined($numProc)) || ($numProc == 0)) {
+  $numProc = 1;
+}
+
+for(my $count = 0; $count < $numRepos; ++$count) {
+    $queue->enqueue($endOfQueueMarker);
+}
+
+# create a thread per cpu up to numProc or numb of repos
+my @myThreads;
+for(my $count = "0"; (($count < $numProc) &&
+                      ($count < $numRepos)); ++$count) {
+  print("Creating queue $count\n");
+  $myThreads[$count] = threads->new(\&runCmd);
+}
+
+# wait for threads to finish
+$| = 1;
+my $done = "0";
+while(!$done) {
+  my $numReposLeft = "0";
+  $done = "1";
+  sleep("1");
+  for(my $count = 0; (($count < $numProc) && 
+                      ($count < $numRepos)); ++$count) {
+    if(!$myThreads[$count]->is_joinable()) {
+      ++$numReposLeft;
+      $done = "0";
+    }
+  }
+  if($numProc > 1) {
+    print("$numReposLeft ");
+  }
+}
+
+# reap all the myThreads
+
+my $fail = "0";
+for(my $count = 0; (($count < $numProc) && 
+                    ($count < $numRepos)); ++$count) {
+  my $ret = $myThreads[$count]->join();
+  if($ret) {
+    print("\nERROR: tarRepos failed\n\n");
+    $fail = "1";
+  }
+}
+if(!$noXmessage && (-f "/usr/bin/xmessage")) {
+  my $output;
+  if(!$fail) {
+    $output = "SUCCESS: ";
+  } else {
+    $output = "FAILED: ";
+  }
+  my $cmd = "xmessage -center \"${output}tarRepos in $pwd\"";
+  system($cmd);
+}
+if(!$fail) {
+  print("\n\ntarRepos completed successfully\n\n");
+} else {
+  print("\n\ntarRepos FAILED\n\n");
+}
+
+sub runCmd {
+  if(!chdir($pwd)) {
+    print("\nERROR: cannot chdir to $pwd\n\n");
+    return 1;
+  }
+  my $error = "0";
+  my $done = "0";
+  while(!$done) {
+    my $dir = $queue->dequeue();
+    print("dir = $dir\n");
+    if(defined($dir) && ($dir ne $endOfQueueMarker)) {
+      my $cmd = "tar -czf $tempDir/$repoTarDir/$dir.tgz $dir";
+      if(system($cmd)) {
+        print("\nERROR: failed to tar $dir\n");
+        return 1;
+      }
+      print("\n$dir complete\n");
+    } else {
+      return 0;
+    }
+  }
+}

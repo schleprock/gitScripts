@@ -2,14 +2,34 @@
 
 use strict;
 
-use Getopt::Long qw(:config pass_through);
+use Getopt::Long;
 use Cwd;
 use Cwd 'chdir';
 
 my $currentDir = getcwd();
 
+my $setPerfEnv;
+my $help;
+
+GetOptions("setPerformanceEnv" => \$setPerfEnv,  
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\nvs2012 [-setPerformanceEnv] [-help|?]\n");
+  print("\nThis script will launch vs2012 in the current environment.\n");
+  print("\t-setPerformanceEnv: set the SIMPLORER_PERFORMANCE_METRIC_TOOL_ENV");
+  print("\n\t\tvariable to 1\n\n");
+  exit 1;
+}
+
+printHelp() if($help);
+
+
 my $vsDir = "/cygdrive/c/Program\ Files\ \(x86\)/Microsoft\ Visual\ Studio\ 11.0/Common7/IDE";
-#my $vsDir = "/cygdrive/c/Program\\ Files\\ \\(x86\\)/Microsoft\\ Visual\\ Studio\\ 11.0/Common7/IDE";
 if(!chdir($vsDir)) {
   print("ERROR: cannot chdir to $vsDir\n\n");
   exit 2;
@@ -21,6 +41,9 @@ if(! -e $vsExec) {
   print("ERROR: cannot find $vsExec exec\n\n");
   exit 1;
 }
-$ENV{MODELICA_PERFORMANCE_ENV_VALUE} = "1";
-print("MODELICA_PERFORMANCE_ENV_VALUE = $ENV{MODELICA_PERFORMANCE_ENV_VALUE}\n");
+my $perfEnvName = "SIMPLORER_PERFORMANCE_METRIC_TOOL_ENV"; 
+if($setPerfEnv) {
+  $ENV{$perfEnvName} = "1";
+}
+print("$perfEnvName = $ENV{$perfEnvName}\n");
 system("./$vsExec &> /tmp/crap.out &");

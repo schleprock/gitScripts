@@ -14,6 +14,7 @@ use Time::HiRes qw(sleep);
 my $queue = Thread::Queue->new();
 my $endOfQueueMarker = "ENDOFQUEUEMARKER";
 
+my $failedRepos = Thread::Queue->new();
 
 my $sourceRepoDir;
 my $destRepoDir;
@@ -165,6 +166,17 @@ if(-f "/usr/bin/xmessage") {
   system($cmd);
 }
 print("\n\n${output} in $destRepoDir\n\n");
+if($fail) {
+  print("Failing repo cmd's:\n");
+  my $errDone = 0;
+  while(!$errDone) {
+    if(defined(my $err = $failedRepos->dequeue_nb())) {
+      print("\t$err\n");
+    } else {
+      $errDone = 1;
+    }
+  }
+}
 exit($fail);
 
 sub printHelp
@@ -190,6 +202,7 @@ sub cloneDir {
       print("cmd = $cmd\n");
       if(system($cmd)) {
         print("\n\nERROR: $cmd failed\n\n");
+        $failedRepos->enqueue($cmd);
         ++$error;
       } else {
         print("\nCommand $cmd, complete\n");
@@ -201,6 +214,7 @@ sub cloneDir {
           print("running cmd: $cmd\n");
           if(system($cmd)) {
             print("\n\nERROR: $cmd failed\n\n");
+            $failedRepos->enqueue($cmd);
             ++$error;
           } else {
             print("\nUpdate of submodules in $here complete\n");

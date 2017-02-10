@@ -1,0 +1,3 @@
+#!/bin/bash
+
+export SIMPLORER_PERFORMANCE_METRIC_TOOL_ENV=1

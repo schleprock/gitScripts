@@ -89,6 +89,12 @@ if($output =~ m/401/) {
   }
 }
 
+if($output =~ m/404/) {
+  print("\nERROR: $artUrl is down....\n\n");
+  print("$output\n\n");
+  exit(3);
+}
+
 
 print("running $crappyEBUtool\n\n");
 my $debugSwitch = " ";

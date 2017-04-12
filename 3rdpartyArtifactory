@@ -68,32 +68,32 @@ my $silent = " -s ";
 if($debug) {
   $silent = " ";
 }
-my $cmd = "curl -k $silent -u ${user}:${passwd} $artUrl";
-my $output = qx/$cmd 2>&1/;
-if($?) {
-  print("ERROR: curl failed with the following output:\n\n");
-  print("$output\n\n");
-  exit(5);
-}
-if($debug) {
-  print("$cmd returned $output\n");
-}
-if($output =~ m/401/) {
-  if($output =~ m/Bad credentials/) {
-    print("\nERROR: bad credentails, check passwd\n\n");
-    exit(3);
-  } else {
-    print("\nERROR: Recieved 401 in output: \n");
-    print("$output\n\n");
-    exit(4);
-  }
-}
+# my $cmd = "curl -k $silent -u ${user}:${passwd} $artUrl";
+# my $output = qx/$cmd 2>&1/;
+# if($?) {
+#   print("ERROR: curl failed with the following output:\n\n");
+#   print("$output\n\n");
+#   exit(5);
+# }
+# if($debug) {
+#   print("$cmd returned $output\n");
+# }
+# if($output =~ m/401/) {
+#   if($output =~ m/Bad credentials/) {
+#     print("\nERROR: bad credentails, check passwd\n\n");
+#     exit(3);
+#   } else {
+#     print("\nERROR: Recieved 401 in output: \n");
+#     print("$output\n\n");
+#     exit(4);
+#   }
+# }
 
-if($output =~ m/404/) {
-  print("\nERROR: $artUrl is down....\n\n");
-  print("$output\n\n");
-  exit(3);
-}
+# if($output =~ m/404/) {
+#   print("\nERROR: $artUrl is down....\n\n");
+#   print("$output\n\n");
+#   exit(3);
+# }
 
 
 print("running $crappyEBUtool\n\n");

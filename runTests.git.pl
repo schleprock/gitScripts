@@ -62,10 +62,15 @@ sub printHelp {
   print "\t[--si <si location>] [--testcaselistfile <testcase file>]\n";
   print "\t[-j <numb>] [--cppGen <dir>} [--runSingleCompiler] \n";
   print "\t[--cppDiff <dir>] [--sortDiff] [--repeat <numb>] [--help|?]\n\n";
-  print "\tdefault: --temp /d/ansysdev/compilerTests/${pwv}Tests";
-  print "--flav 64debug\n\t";
-  print "--si C:\\Program Files\\AnsysEM\\AnsysEM16.0\\Win64";
-  print "\n\t-j $j\n\n";
+  print "default: \n\n$0 --temp $tmp";
+  print " --flav $flav";
+  print " --si $si";
+  print " --testcaselistfile $testcaseListFile";
+  print " -j $j\n\n";
+  print "HINT: to run a specified set of tests (like a single test, create a";
+  print " text file \nanywhere you want and put the vhd file name (along with";
+  print " any dependent vhd's) \nin the text file. then call the script with:\n";
+  print "\t--testcaselistfile <path to file/text file>\n\n";
   exit 1;
 }
 

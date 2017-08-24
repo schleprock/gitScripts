@@ -29,7 +29,9 @@ printHelp() if($help);
 sub printHelp {
   print("\ngitRunCmd --command <cmd> [--parallel [numb]][--help|?]\n");
   print("\t--parallel [numb]: run commands in parallel\n");
-  print("\t--command: command to run in each directory\n\n");
+  print("\t--command: command to run in each directory\n");
+  print("\t--noxmessage: suppress xmessage\n");
+  print("\n\n");
   exit;
 }
 

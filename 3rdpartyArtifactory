@@ -10,6 +10,7 @@ my $user;
 my $passwd;
 my $artUrl;
 my $debug;
+my $newTool;
 my $noXmessage;
 my $help;
 
@@ -17,6 +18,7 @@ GetOptions("user=s" => \$user,
            "passwd=s" => \$passwd,
            "artUrl=s" => \$artUrl,
            "debug" =>\$debug,
+           "newTool" =>\$newTool,
            "noxmessage" =>\$noXmessage,
            "help|?" => \$help,
     ) or printHelp();
@@ -44,7 +46,11 @@ if(-d "bldtools") {
   # old bldtools stuff
   $crappyEBUtool = "./bldtools/3rdparty-af/ebuartifact.sh";
 } elsif (-d "DevTools") {
-  $crappyEBUtool = "./DevTools/utilities/3rdparty-af/ebuartifact.sh";
+  if(!$newTool) {
+    $crappyEBUtool = "./DevTools/utilities/3rdparty-af/ebuartifact.sh";
+  } else {
+    $crappyEBUtool = "./DevTools/utilities/thirdparty_artifactory/thirdparty_download.sh";
+  }
 } else {
   print("\nERROR: no tools directory, either bldtools or DevTools.\n\t");
   print("\tMake sure you are in the directory above the repo's\n");

@@ -30,7 +30,7 @@ chomp($pathToRepo);
 my $tmp = "/cygdrive/d/ansysdev/compilerTests/${pwv}Tests";
 my $type = "debug";
 my $flav;
-my $si = "C:\\Program Files\\AnsysEM\\AnsysEM17.0\\Win64";
+my $si = "C:\\Program Files\\AnsysEM\\AnsysEM18.1\\Win64";
 my $testcaseListFile = "testcase-list-file.txt";
 my $cppDiff = "";
 my $sortDiff;

@@ -4,15 +4,14 @@ use strict;
 use GitModules;
 use Cwd;
 
-sub myRoutine {
-  my $pwd = getcwd();
-  print("\nFoo in $pwd\n");
-  return(0);
-}
-
-my $fail = GitModules::runCmd(\&myRoutine, 0, 1, 0);
-if(!$fail) {
-  print("\n\ngit runCmd completed successfully\n\n");
+my $dir = "/cygdrive/d/ansysdev/git/vs15debug/Ansys_CDU_nosync";
+my $branch = "xhao_new_mono_3.12_r1";
+my $cmd = "cd $dir; git branch -r";
+my $output = qx/$cmd/;
+chomp($output);
+print("\noutput = $output\n");
+if($output =~ /origin\/${branch}$/m) {
+  print("found it\n");
 } else {
-  print("\n\ngit runCmd FAILED\n\n");
+  print("not found\n");
 }

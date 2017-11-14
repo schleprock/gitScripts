@@ -10,6 +10,7 @@ use GitModules;
 
 my $branch;
 my $j;
+my $force;
 my $help;
 my $noXmessage = 0;
 my $debugMode;
@@ -17,6 +18,7 @@ my $help;
 
 GetOptions("branch=s" => \$branch,
            "j:i" => \$j, #run commands in parallel
+           "force" => \$force, #force a reset to new branch
            "noxmessage" => \$noXmessage, #disable xmessage
            "debugMode" => \$debugMode, 
            "help|?" => \$help
@@ -26,12 +28,13 @@ printHelp() if($help);
 
 sub printHelp
 {
-  print("\ncheckOutRemoteBranch [-help|?] --branch <name>\n");
+  print("\ncheckOutRemoteBranch [-help|?] --branch <name> [--force]\n");
   print("\n\tThis script will checkout the remote branch with \"");
   print("branch name\" \n\tif it exists in any of the repos.\n");
   print("\tIf the remote branch does not exist in the repo, the script ");
   print("will\n\tcheckout develop. NOTE: this script does NOT update ");
   print("the repo but does\n\tdo a fetch\n\n");
+  print("\t--force: force a reset to new branch\n");
   exit 1;
 }
 
@@ -58,15 +61,28 @@ sub checkOutBranch {
   print("Fetching all remote branches for $dir\n");
   my $cmd = "cd $dir; git fetch --progress";
   system($cmd) == 0 or die("\nERROR: could not fetch from $dir\n\n");
-  $cmd = "cd $dir; git branch -r | grep \"origin/${branch}\$\"";
+  $cmd = "cd $dir; git branch -r";
   my $output = qx/$cmd/;
   chomp($output);
-  if(!$output) {
-    print("\n$dir does not have remote branch $branch. skipping...\n\n");
+  if($debugMode) {
+    print("\ngrep output: $output\n\n");
+  }
+  if(!($output =~ /origin\/${branch}$/m)) {
+    print("\n$dir does not have remote branch $branch.");
+    if($output =~ /origin\/${branch}$/mi) {
+      print("\nBUT does have a branch with different case.");
+    }
+    print("... skipping\n\n");
     return(0);
+  } elsif($debugMode) {
+    print("found $branch\n");
   }
   print("$dir is currently on $currentBranch, checking out $branch\n");
-  $cmd = "cd $dir; git checkout $branch";
+  my $forceCmd = " ";
+  if($force) {
+    $forceCmd = " --force ";
+  }
+  $cmd = "cd $dir; git checkout $forceCmd -B $branch origin/$branch";
   system($cmd) == 0 or die("\nERROR: could not checkout $branch\n\n");
   print("$dir successfully checked out $branch\n\n");
   return(0);

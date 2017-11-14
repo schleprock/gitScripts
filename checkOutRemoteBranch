@@ -6,18 +6,27 @@ use Getopt::Long;
 use Cwd;
 use Cwd 'chdir';
 use File::Basename;
+use GitModules;
 
-my $command;
+my $branch;
+my $j;
+my $help;
+my $noXmessage = 0;
+my $debugMode;
 my $help;
 
-GetOptions("help|?" => \$help,
+GetOptions("branch=s" => \$branch,
+           "j:i" => \$j, #run commands in parallel
+           "noxmessage" => \$noXmessage, #disable xmessage
+           "debugMode" => \$debugMode, 
+           "help|?" => \$help
     ) or printHelp();
 
 printHelp() if($help);
 
 sub printHelp
 {
-  print("\ncheckOutRemoteBranch [-help|?] <branch name>\n");
+  print("\ncheckOutRemoteBranch [-help|?] --branch <name>\n");
   print("\n\tThis script will checkout the remote branch with \"");
   print("branch name\" \n\tif it exists in any of the repos.\n");
   print("\tIf the remote branch does not exist in the repo, the script ");
@@ -28,52 +37,43 @@ sub printHelp
 
 printHelp() if($help);
 
-if(! $ARGV[0]) {
+if(!$branch) {
   print("\n\nERROR: no branch name given.\n");
   printHelp();
 }
-my $branch = $ARGV[0];
-
-my $pwd = getcwd();
-my @dirs;
-if(chdir(".git")) {
-  chdir($pwd);
-  push(@dirs, ".");
-} else {
-  my @ls = qx/ls -1/;
-  chomp(@ls);
-  foreach my $dir(@ls) {
-    if(chdir("${dir}/.git")) {
-      push(@dirs, $dir);
-      chdir($pwd);
-    }
-  }
-}
 
 print("\nChecking out branch $branch where it exists\n\n");
-foreach my $dir(@dirs) {
+
+my $fail = GitModules::runCmd(\&checkOutBranch, $j, $debugMode);
+
+sub checkOutBranch {
+  my $dir = $_[0];
   chdir($dir) or die("\nERROR: could not chdir to $dir.\n\n");
-  my $currentBranch = qx/git symbolic-ref --short HEAD/;
+  my $currentBranch = qx/cd $dir; git symbolic-ref --short HEAD/;
   chomp($currentBranch);
   if($currentBranch eq $branch) {
     print("$dir is already on $branch. skipping...\n\n");
-    chdir($pwd);
-    next;
+    return(0);
   }
   print("Fetching all remote branches for $dir\n");
-  my $cmd = "git fetch --progress";
+  my $cmd = "cd $dir; git fetch --progress";
   system($cmd) == 0 or die("\nERROR: could not fetch from $dir\n\n");
-  $cmd = "git branch -r | grep \"origin/${branch}\$\"";
+  $cmd = "cd $dir; git branch -r | grep \"origin/${branch}\$\"";
   my $output = qx/$cmd/;
   chomp($output);
   if(!$output) {
     print("\n$dir does not have remote branch $branch. skipping...\n\n");
-    chdir($pwd);
-    next;
+    return(0);
   }
   print("$dir is currently on $currentBranch, checking out $branch\n");
-  $cmd = "git checkout $branch";
+  $cmd = "cd $dir; git checkout $branch";
   system($cmd) == 0 or die("\nERROR: could not checkout $branch\n\n");
   print("$dir successfully checked out $branch\n\n");
-  chdir($pwd);
+  return(0);
+}
+
+if(!$fail) {
+  print("\n\nSuccess\n\n");
+} else {
+  print("\n\nFAILED\n\n");
 }

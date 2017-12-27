@@ -12,6 +12,7 @@ my $mergeMainBranch;
 my $noCommitMerge;
 my $pushMerge;
 my $j;
+my $no3rdparty;
 my $help;
 
 GetOptions("noxmessage" => \$noxmessage,
@@ -20,6 +21,7 @@ GetOptions("noxmessage" => \$noxmessage,
            "noCommitMerge" => \$noCommitMerge,
            "pushMerge" => \$pushMerge,
            "j:i" => \$j,
+           "no3rdparty" => \$no3rdparty,
            "help|?" => \$help,
     ) or printHelp();
 
@@ -30,7 +32,8 @@ if($help) {
 sub printHelp
 {
   print("\ngitUpdate [--noxmessage] [--mergeMainBranch] [--j <int>] ");
-  print("[--noCommitMerge] \n\t\t[--pushMerge] [--forceMerge] [--help]\n\n");
+  print("[--noCommitMerge] \n\t\t[--pushMerge] [--forceMerge] ");
+  print("[--no3rdparty] [--help]\n\n");
   print("Update a set of repo's or just a single repo. Default is to\n");
   print("automerge any non-master branches with master unless this script\n");
   print("is run in a single repo (like simplorer).\n");
@@ -43,6 +46,7 @@ sub printHelp
   print(" them.\n\t\t default behavior is to commit but not push\n");
   print("\t--pushMerge: if changes are automerged, push them.\n");
   print("\t--j <int>: set parallel limit, default is all cpu's\n");
+  print("\t--no3rdparty: do not update 3rdparty repo");
   print("\t--help: print help\n");
   exit 1;
 }
@@ -100,14 +104,18 @@ if(chdir(".git")) {
   printAndExit();
 }
 
-$cmd = "~/gitScripts/3rdpartyArtifactory";
-$res = system($cmd);
-print("\n$cmd returned $res\n");
-if($res)
-{
-  $output = "Update FAILED: $cmd failed in $pwd";
-  $fail = 1;
-  printAndExit();
+if($no3rdparty) {
+  print("\nINFO: skipping update of 3rdparty repo\n");
+} else {
+  $cmd = "~/gitScripts/3rdpartyArtifactory";
+  $res = system($cmd);
+  print("\n$cmd returned $res\n");
+  if($res)
+  {
+    $output = "Update FAILED: $cmd failed in $pwd";
+    $fail = 1;
+    printAndExit();
+  }
 }
 $output = "Update SUCCEEDED in $pwd";
 printAndExit();

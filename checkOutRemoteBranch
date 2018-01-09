@@ -51,6 +51,10 @@ my $fail = GitModules::runCmd(\&checkOutBranch, $j, $debugMode);
 
 sub checkOutBranch {
   my $dir = $_[0];
+  if($dir =~ m!/definitions$!) {
+    print("\nSkipping definitions repo...\n\n");
+    return(0);
+  }
   chdir($dir) or die("\nERROR: could not chdir to $dir.\n\n");
   my $currentBranch = qx/cd $dir; git symbolic-ref --short HEAD/;
   chomp($currentBranch);

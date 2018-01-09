@@ -77,6 +77,7 @@ if($repo) {
             "ansoft",
             "bostonvob",
             "core",
+            "definitions",
             "delcross",
             "multiport",
             "nextgen",
@@ -199,7 +200,11 @@ sub cloneDir {
     }
     if(defined($repo) && ($repo ne $endOfQueueMarker)) {
       print("\ncloning $repo\n");
-      my $cmd = "git clone -v --progress --branch develop \"${sourceRepoDir}/${sshRepo}.git\" \"${destRepoDir}/${repo}\"";
+      my $singleBranch = " ";
+      if($repo eq "definitions") {
+        $singleBranch = "--single-branch --depth=1";
+      }
+      my $cmd = "git clone -v --progress --branch develop $singleBranch \"${sourceRepoDir}/${sshRepo}.git\" \"${destRepoDir}/${repo}\"";
       print("cmd = $cmd\n");
       if(system($cmd)) {
         print("\n\nERROR: $cmd failed\n\n");

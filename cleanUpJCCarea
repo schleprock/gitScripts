@@ -1,0 +1,20 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+
+my @cmds = ('rm -f rm libmodelicalcompiler.* relativepath.props',
+            'find . -name "*.obj" | xargs rm -f',
+            'find . -name "*.log" | xargs rm -f',
+            'find . -name "*.tlog" | xargs rm -fr',
+            'find . -name desktop.ini | xargs rm -f');
+foreach my $cmd(@cmds) {
+  if(system($cmd)) {
+    print("ERROR: failed to run $cmd\n\n");
+    exit 1;
+  }
+}

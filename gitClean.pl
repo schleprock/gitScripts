@@ -137,11 +137,11 @@ while(!$done) {
                       ($count < $numRepos)); ++$count) {
     if(!$myThreads[$count]->is_joinable()) {
       ++$remaining;
-      print("\nThread $count is not joinable\n");
+      # print("\nThread $count is not joinable\n");
       $done = "0";
     }
   }
-  print(" $remaining");
+  #print(" $remaining");
 }
 # reap all the myThreads
 my $fail = "0";

@@ -43,12 +43,13 @@ sub printHelp
 {
   print "build [--type <debug/release>] [--bits <32/64>]\n";
   print "\t[ --core | --fortranLibs || --designerUI || --simpSolver ]\n";
-  print "\t[ --clean ] [--help]\n\n";
+  print "\t[ --clean ] [--j numbCpus] [--help]\n\n";
   print "default is -t debug -b 64\n";
   print "\t--type: type of build debug/release\n";
   print "\t--bits: 32/64 bit build\n";
   print "\t--core/fortranlibs/designerUI/simpSolver only build that sln\n";
   print "\t--clean: invoke clean before each build\n";
+  print "\t--j: numb cpu's\n";
   print "\t--help|?: print out this message\n\n";
   exit 1;
 }

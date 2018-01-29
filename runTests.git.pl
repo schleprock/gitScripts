@@ -22,7 +22,7 @@ if(!chdir($compileOnlyDir)) {
 
 my $tmp = "/ansysdev/compilerTests/${pwv}Tests";
 my $flav = "64debug";
-my $si = "C:\\Program Files\\AnsysEM\\AnsysEM17.0\\Win64";
+my $si = "/ansysdev/git/${pwv}/3rdparty/MinGW/MinGW-4.8.1";
 my $testcaseListFile = "testcase-list-file.txt";
 my $cppDiff = "";
 my $sortDiff;

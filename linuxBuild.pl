@@ -54,6 +54,10 @@ sub printHelp
   exit 1;
 }
 
+if(! -x "/usr/bin/xmessage") {
+  $noxmessage = 1;
+}
+
 my $all = 1;
 if($core || $fortranLibs || $designerUI || $simpSolver) {
   $all = 0;

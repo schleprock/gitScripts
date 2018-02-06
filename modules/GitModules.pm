@@ -13,8 +13,10 @@ sub test {
 }
 
 sub numbProcessors {
+  # parameters (j, debugmode)
   # figure out how many processors
   my $j = $_[0];
+  my $debugMode = $_[1];
   
   my $numProc;
   if(defined($j) && ($j != 0)) {
@@ -22,7 +24,9 @@ sub numbProcessors {
   } else {
     $numProc = $ENV{NUMBER_OF_PROCESSORS};
     if(defined($numProc)) {
-      print("$numProc processors detected\n");
+      if($debugMode) {
+        print("$numProc processors detected\n");
+      }
     } else {
       print("cannot determine numb of processors, using 4\n");
       $numProc = "4";
@@ -36,6 +40,8 @@ sub findAllRepos {
   # a list, or queue or whatever of repo's.
   my $addRepoFunc = $_[0];
   my $pwd = $_[1];
+  my $debugMode = $_[2];
+  
   my $numRepos = "0";
   
   if(chdir(".git")) {
@@ -53,7 +59,9 @@ sub findAllRepos {
       }
     }
   }
-  print("numRepos = $numRepos\n");
+  if($debugMode) {
+    print("numRepos = $numRepos\n");
+  }
   if($numRepos eq "0") {
     print("No repositories found in $pwd\n\n");
     exit 2;
@@ -132,13 +140,14 @@ sub runCmd {
   my $pwd = getcwd();
 
   # find all repo's
-  my $numRepos = GitModules::findAllRepos(sub{$queue->enqueue(@_)}, $pwd);
+  my $numRepos = GitModules::findAllRepos(sub{$queue->enqueue(@_)}, $pwd,
+      $debugMode);
 
   for(my $count = 0; $count < $numRepos; ++$count) {
     $queue->enqueue($endOfQueueMarker);
   }
 
-  my $numProc = GitModules::numbProcessors($j);
+  my $numProc = GitModules::numbProcessors($j, $debugMode);
 
   # create a thread per cpu up to numProc or numb of repos
   my @myThreads;

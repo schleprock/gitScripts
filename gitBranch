@@ -1,0 +1,61 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use GitModules;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+
+my $j;
+my $help;
+my $debugMode;
+
+GetOptions("j:i" => \$j, #run commands in parallel
+           "debugMode" => \$debugMode, 
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+print("\n");
+
+sub printHelp {
+  print("\ngitRunCmd --command <cmd> [--j [numb]][--help|?]\n");
+  print("\t--j [numb]: run commands in parallel\n");
+  print("\t--command: command to run in each directory\n");
+  print("\t--debugMode: turn on debugMode (off by default)\n");
+  print("\n\n");
+  exit;
+}
+
+sub run {
+  my $here = $_[0];
+  if(!chdir($here)) {
+    print("\nERROR: cannot chdir to $here\n\n");
+    return(1);
+  }
+  my $repo = basename($here);
+  my $command = "cd $here; git rev-parse --abbrev-ref HEAD";
+  if($debugMode) {
+    print("\nRunning: $command here: $here:\n");
+  }
+  my $branch = qx/$command/;
+  if($? >> 8) {
+    print("\nERROR: $command failed here: $here\n\n");
+    return(1);
+  }
+  chomp($branch);
+  print("$repo: $branch\n");
+  return(0);
+}
+
+my $fail = GitModules::runCmd(\&run, $j, $debugMode);
+
+if(!$fail) {
+  print("\n\ngitBranch completed successfully\n\n");
+} else {
+  print("\n\ngitBranch FAILED\n\n");
+}

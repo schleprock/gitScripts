@@ -49,12 +49,12 @@ sub run {
     return(1);
   }
   chomp($branch);
-  if($branch ne "develop") {
+  if(($branch ne "develop") && ($branch ne "master")) {
     print color 'bold blue';
   }
   print("$repo: ");
   print color 'reset';
-  if($branch ne "develop") {
+  if(($branch ne "develop" && ($branch ne "master"))) {
     print color 'bold red';
   }
   print("$branch\n");

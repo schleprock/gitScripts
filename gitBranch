@@ -8,6 +8,7 @@ use Getopt::Long;
 use Cwd;
 use Cwd 'chdir';
 use File::Basename;
+use Term::ANSIColor;
 
 my $j;
 my $help;
@@ -48,7 +49,16 @@ sub run {
     return(1);
   }
   chomp($branch);
-  print("$repo: $branch\n");
+  if($branch ne "develop") {
+    print color 'bold blue';
+  }
+  print("$repo: ");
+  print color 'reset';
+  if($branch ne "develop") {
+    print color 'bold red';
+  }
+  print("$branch\n");
+  print color 'reset';
   return(0);
 }
 

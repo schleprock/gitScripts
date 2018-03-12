@@ -90,7 +90,7 @@ if("$buildType" eq "debug"){
 }
 
 if($all || $core) {
-  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/Core.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer/Core.build.out";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/Core.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer/Core.build.out ; ( exit ${PIPESTATUS[0]} )";
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");
@@ -102,7 +102,7 @@ if($all || $core) {
 }
 
 if($all || $fortranLibs) {
-  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/FortranLibs.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer/FortranLibs.build.out";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/FortranLibs.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer/FortranLibs.build.out ; ( exit ${PIPESTATUS[0]} )";
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");
@@ -114,7 +114,7 @@ if($all || $fortranLibs) {
 }
 
 if($all || $designerUI) {
-  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/Designer-UI.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer/Designer-UI.build.out";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/Designer-UI.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer/Designer-UI.build.out ; ( exit ${PIPESTATUS[0]} )";
   print "\nexecing: $cmd\n\n";
   my $ret = system($cmd);
   print "\ncmd returned $ret\n";
@@ -128,7 +128,7 @@ if($all || $designerUI) {
 }
 
 if($simpSolver) {
-  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/SimplorerSolver.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer.build.out";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/SimplorerSolver.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer.build.out ; ( exit ${PIPESTATUS[0]} )";
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");

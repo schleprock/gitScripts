@@ -7,6 +7,9 @@ use Cwd;
 use Cwd 'chdir';
 use File::Basename;
 use GitModules;
+use threads;
+use Thread::Queue;
+
 
 my $branch;
 my $j;
@@ -48,7 +51,7 @@ if(!$branch) {
 
 print("\nChecking out branch $branch where it exists\n\n");
 
-my @failures;
+my $failures = Thread::Queue->new();
 
 my $fail = GitModules::runCmd(\&checkOutBranch, $j, $debugMode);
 
@@ -59,8 +62,9 @@ sub checkOutBranch {
     return(0);
   }
   if(!chdir($dir)) {
-    print("\nERROR: could not chdir to $dir.\n\n");
-    push(@failures, $dir);
+    my $err = "\nERROR: could not chdir to $dir.\n";
+    print("$err");
+    $failures->enqueue($err);
     return(2);
   }
   my $currentBranch = qx/cd $dir; git symbolic-ref --short HEAD/;
@@ -72,8 +76,9 @@ sub checkOutBranch {
   print("Fetching all remote branches for $dir\n");
   my $cmd = "cd $dir; git fetch --progress";
   if(system($cmd)) {
-    print("\nERROR: could not fetch from $dir\n\n");
-    push(@failures, $dir);
+    my $err = "\nERROR: could not fetch from $dir\n";
+    print("$err");
+    $failures->enqueue($err);
     return(1);
   }
   $cmd = "cd $dir; git branch -r";
@@ -99,8 +104,9 @@ sub checkOutBranch {
   }
   $cmd = "cd $dir; git checkout $forceCmd -B $branch origin/$branch";
   if(system($cmd)) {
-    print("\nERROR: could not checkout $branch\n\n");
-    push(@failures, $dir);
+    my $err = "\nERROR: could not checkout $branch\n\n";
+    print("$err");
+    $failures->enqueue($err);
     return(1);
   }
   print("$dir successfully checked out $branch\n\n");
@@ -109,10 +115,15 @@ sub checkOutBranch {
 
 if(!$fail) {
   print("\n\nSuccess\n\n");
-} else {
-  print("\nThe following directories failed:\n");
-  foreach my $failure(@failures) {
-    print("\t$failure\n");
-  }
-  print("\n\nFAILED\n\n");
+  exit(0);
 }
+print("\n\nFAILED\n\n");
+my $errDone = "0";
+while(!$errDone) {
+  if(defined(my $err = $failures->dequeue_nb())) {
+    print("\n$err\n");
+  } else {
+    $errDone = "1";
+  }
+}
+exit(1);

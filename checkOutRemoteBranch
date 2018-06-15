@@ -64,7 +64,10 @@ sub checkOutBranch {
   }
   print("Fetching all remote branches for $dir\n");
   my $cmd = "cd $dir; git fetch --progress";
-  system($cmd) == 0 or die("\nERROR: could not fetch from $dir\n\n");
+  if(system($cmd)) {
+    print("\nERROR: could not fetch from $dir\n\n");
+    return(1);
+  }
   $cmd = "cd $dir; git branch -r";
   my $output = qx/$cmd/;
   chomp($output);
@@ -87,7 +90,10 @@ sub checkOutBranch {
     $forceCmd = " --force ";
   }
   $cmd = "cd $dir; git checkout $forceCmd -B $branch origin/$branch";
-  system($cmd) == 0 or die("\nERROR: could not checkout $branch\n\n");
+  if(system($cmd)) {
+    print("\nERROR: could not checkout $branch\n\n");
+    return(1);
+  }
   print("$dir successfully checked out $branch\n\n");
   return(0);
 }

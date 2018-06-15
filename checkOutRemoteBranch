@@ -28,7 +28,7 @@ printHelp() if($help);
 
 sub printHelp
 {
-  print("\ncheckOutRemoteBranch [-help|?] --branch <name> [--force]\n");
+  print("\ncheckOutRemoteBranch [-help|?] [-j num] --branch <name> [--force]\n");
   print("\n\tThis script will checkout the remote branch with \"");
   print("branch name\" \n\tif it exists in any of the repos.\n");
   print("\tIf the remote branch does not exist in the repo, the script ");

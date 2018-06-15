@@ -28,7 +28,8 @@ printHelp() if($help);
 
 sub printHelp
 {
-  print("\ncheckOutRemoteBranch [-help|?] [-j num] --branch <name> [--force]\n");
+  print("\ncheckOutRemoteBranch [-help|?] [-j num] --branch <name> ");
+  print("[--force]\n");
   print("\n\tThis script will checkout the remote branch with \"");
   print("branch name\" \n\tif it exists in any of the repos.\n");
   print("\tIf the remote branch does not exist in the repo, the script ");
@@ -47,6 +48,8 @@ if(!$branch) {
 
 print("\nChecking out branch $branch where it exists\n\n");
 
+my @failures;
+
 my $fail = GitModules::runCmd(\&checkOutBranch, $j, $debugMode);
 
 sub checkOutBranch {
@@ -55,7 +58,11 @@ sub checkOutBranch {
     print("\nSkipping definitions repo...\n\n");
     return(0);
   }
-  chdir($dir) or die("\nERROR: could not chdir to $dir.\n\n");
+  if(!chdir($dir)) {
+    print("\nERROR: could not chdir to $dir.\n\n");
+    push(@failures, $dir);
+    return(2);
+  }
   my $currentBranch = qx/cd $dir; git symbolic-ref --short HEAD/;
   chomp($currentBranch);
   if($currentBranch eq $branch) {
@@ -66,6 +73,7 @@ sub checkOutBranch {
   my $cmd = "cd $dir; git fetch --progress";
   if(system($cmd)) {
     print("\nERROR: could not fetch from $dir\n\n");
+    push(@failures, $dir);
     return(1);
   }
   $cmd = "cd $dir; git branch -r";
@@ -92,6 +100,7 @@ sub checkOutBranch {
   $cmd = "cd $dir; git checkout $forceCmd -B $branch origin/$branch";
   if(system($cmd)) {
     print("\nERROR: could not checkout $branch\n\n");
+    push(@failures, $dir);
     return(1);
   }
   print("$dir successfully checked out $branch\n\n");
@@ -101,5 +110,9 @@ sub checkOutBranch {
 if(!$fail) {
   print("\n\nSuccess\n\n");
 } else {
+  print("\nThe following directories failed:\n");
+  foreach my $failure(@failures) {
+    print("\t$failure\n");
+  }
   print("\n\nFAILED\n\n");
 }

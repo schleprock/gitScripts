@@ -68,6 +68,12 @@ sub checkOutBranch {
     return(2);
   }
   my $currentBranch = qx/cd $dir; git symbolic-ref --short HEAD/;
+  if($?) {
+    my $err = "ERROR: git symbolic-ref failed in $dir\n";
+    print($err);
+    $failures->enqueue($err);
+    return(1);
+  }
   chomp($currentBranch);
   if($currentBranch eq $branch) {
     print("$dir is already on $branch. skipping...\n\n");

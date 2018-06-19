@@ -7,6 +7,8 @@ use GitModules;
 use Getopt::Long;
 use Cwd;
 use Cwd 'chdir';
+use threads;
+use Thread::Queue;
 
 my $command;
 my $j;
@@ -35,15 +37,21 @@ sub printHelp {
 
 my $pwd = getcwd();
 
+my $failures = Thread::Queue->new();
+
 sub runCmd {
   my $here = $_[0];
   if(!chdir($here)) {
-    print("\nERROR: cannot chdir to $here\n\n");
+    my $err = "\nERROR: cannot chdir to $here\n";
+    print("$err");
+    $failures->enqueue($err);
     return(1);
   }
   print("\nRunning: $command here: $here:\n");
   if(system("cd $here; $command")) {
-    print("\n\nERROR: $command failed in $here\n\n");
+    my $err = "\nERROR: $command failed in $here\n";
+    print("$err");
+    $failures->enqueue($err);
     return(1);
   } else {
     print("\nCommand at $here, complete\n");
@@ -65,6 +73,15 @@ if(!$noXmessage && (-f "/usr/bin/xmessage")) {
 }
 if(!$fail) {
   print("\n\ngit runCmd completed successfully\n\n");
-} else {
-  print("\n\ngit runCmd FAILED\n\n");
+  exit(0);
 }
+print("\n\ngit runCmd FAILED\n\n");
+my $errDone = "0";
+while(!$errDone) {
+  if(defined(my $err = $failures->dequeue_nb())) {
+    print("\n$err\n");
+  } else {
+    $errDone = "1";
+  }
+}
+exit(1);

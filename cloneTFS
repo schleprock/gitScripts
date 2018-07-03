@@ -202,7 +202,7 @@ sub cloneDir {
       print("\ncloning $repo\n");
       my $singleBranch = " ";
       if($repo eq "definitions") {
-        $singleBranch = "--single-branch --depth=1";
+        $singleBranch = "--depth=1 --no-single-branch";
       }
       my $cmd = "git clone -v --progress --branch develop $singleBranch \"${sourceRepoDir}/${sshRepo}.git\" \"${destRepoDir}/${repo}\"";
       print("cmd = $cmd\n");

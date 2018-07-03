@@ -57,10 +57,6 @@ my $fail = GitModules::runCmd(\&checkOutBranch, $j, $debugMode);
 
 sub checkOutBranch {
   my $dir = $_[0];
-  if($dir =~ m!/definitions$!) {
-    print("\nSkipping definitions repo...\n\n");
-    return(0);
-  }
   if(!chdir($dir)) {
     my $err = "\nERROR: could not chdir to $dir.\n";
     print("$err");

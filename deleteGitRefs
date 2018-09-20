@@ -6,6 +6,9 @@ use GitModules;
 
 use Cwd;
 use Cwd 'chdir';
+use File::Basename;
+
+my $scriptName = basename($0);
 
 sub run {
   my $here = $_[0];
@@ -22,7 +25,7 @@ sub run {
 my $fail = GitModules::runCmd(\&run, 1, 0);
 
 if(!$fail) {
-  print("\n\ndeleteGitRefs completed successfully\n\n");
+  print("\n$scriptName completed successfully\n\n");
 } else {
-  print("\n\nndeleteGitRefs FAILED\n\n");
+  print("\nERROR: $scriptName FAILED\n\n");
 }

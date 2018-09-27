@@ -1,0 +1,78 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use GitModules;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+
+my $scriptName = basename($0);
+my $mergeBranch;
+my $j;
+my $help;
+my $debugMode;
+
+GetOptions("mergeBranch=s" => \$mergeBranch,
+           "j:i" => \$j, #run commands in parallel
+           "debugMode" => \$debugMode, 
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+print("\n");
+
+sub printHelp {
+  print("\n$scriptName [--mergeBranch <branch>] [--j [numb]][--help|?]\n");
+  print("\t--mergeBranch [branch]: branch to merge into repo, if not ");
+  print("specified, then merge develop\n");
+  print("\t--j [numb]: run commands in parallel\n");
+  print("\t--debugMode: turn on debugMode (off by default)\n");
+  print("\n\n");
+  exit;
+}
+
+if(!$mergeBranch) {
+  $mergeBranch = "develop";
+}
+
+sub run {
+  my $here = $_[0];
+  if(!chdir($here)) {
+    print("\nERROR: cannot chdir to $here\n\n");
+    return(1);
+  }
+  my $count = 0;
+  print("\nRunning $scriptName in $here\n");
+  # get current branch name
+  my $command = "cd $here; git rev-parse --abbrev-ref HEAD";
+  my $branch = qx/$command/;
+  if($? >> 8) {
+    print("\nERROR: $command failed here: $here\n\n");
+    return(1);
+  }
+  chomp($branch);
+  if($branch eq $mergeBranch) {
+    print("\nINFO: $here is $branch, skipping\n");
+    return(0);
+  }
+  $command = "cd $here; git merge origin/${mergeBranch}";
+  if(system($command)) {
+    my $err = "\nERROR: merge failed in $here\n";
+    $command = "git merge --abort";
+    system($command);
+    return(1);
+  }
+  return(0);
+}
+
+my $fail = GitModules::runCmd(\&run, $j, $debugMode);
+
+if(!$fail) {
+  print("\n$scriptName completed successfully\n\n");
+} else {
+  print("\nERROR: $scriptName FAILED\n\n");
+}

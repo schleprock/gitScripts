@@ -44,11 +44,12 @@ sub run {
   print("\nRunning $scriptName in $here\n");
   while($count < $retries) {
     my $command = "git fetch --progress";
+    print("Running $command in $here, count = $count\n");
     if(system($command)) {
-      print("\n$scriptName failed in $here\n");
+      print("\n$scriptName failed in $here, count = $count\n");
       ++$count;
       if($count >= $retries) {
-        print("\n$scriptName failed all retries in $here\n");
+        print("\n$scriptName failed all retries in $here, count = $count\n");
         return(2);
       }
     } else {

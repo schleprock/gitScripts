@@ -55,7 +55,9 @@ sub run {
   my $command = "cd $here; gitFetchWrapper $gitCommand";
   print("Running $command in $here,\n");
   if(system($command)) {
-    print("\n$command failed in $here,\n");
+    my $err = "\nERROR: $command failed in $here,\n";
+    print("$err");
+    $failures->enqueue($err);
     return(2);
   }
   print("\n$command passed in $here\n");

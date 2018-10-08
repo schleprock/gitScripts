@@ -2,24 +2,20 @@
 
 use strict;
 
+use GitModules;
 use Getopt::Long;
 use Cwd;
 use Cwd 'chdir';
+use File::Basename;
+
+my $scriptName = basename($0);
 
 my $noxmessage;
-my $forceMerge;
-my $mergeMainBranch;
-my $noCommitMerge;
-my $pushMerge;
 my $j;
 my $no3rdparty;
 my $help;
 
 GetOptions("noxmessage" => \$noxmessage,
-           "forceMerge" => \$forceMerge,
-           "mergeMainBranch" => \$mergeMainBranch,
-           "noCommitMerge" => \$noCommitMerge,
-           "pushMerge" => \$pushMerge,
            "j:i" => \$j,
            "no3rdparty" => \$no3rdparty,
            "help|?" => \$help,
@@ -31,93 +27,51 @@ if($help) {
 
 sub printHelp
 {
-  print("\ngitUpdate [--noxmessage] [--mergeMainBranch] [--j <int>] ");
-  print("[--noCommitMerge] \n\t\t[--pushMerge] [--forceMerge] ");
+  print("\n$scriptName [--noxmessage] [-j <int>] ");
   print("[--no3rdparty] [--help]\n\n");
-  print("Update a set of repo's or just a single repo. Default is to\n");
-  print("automerge any non-master branches with master unless this script\n");
-  print("is run in a single repo (like simplorer).\n");
+  print("Update a set of repo's or just a single repo.\n");
   print("\t--noxmessage: suppress xmessage\n");
-  print("\t--forceMerge: do the merge even if in a repo\n");
-  print("\t--mergeMainBranch: if a branch is not on main branch (master");
-  print("\n\t\tdevelop), merge it. ");
-  print("Default is to not merge master into\n\t\tbranch\n");
-  print("\t--noCommitMerge: if there are automerged changes, don't commit ");
-  print(" them.\n\t\t default behavior is to commit but not push\n");
-  print("\t--pushMerge: if changes are automerged, push them.\n");
-  print("\t--j <int>: set parallel limit, default is all cpu's\n");
-  print("\t--no3rdparty: do not update 3rdparty repo");
+  print("\t-j <int>: set parallel limit, default is all cpu's\n");
+  print("\t--no3rdparty: do not update 3rdparty\n");
   print("\t--help: print help\n");
   exit 1;
 }
 
-my $pwd = cwd();
 my $fail = 0;
-my $output;
-
-
-my $pushMergeSw = " ";
-if($pushMerge) {
-  $pushMergeSw = "--pushMerge";
-}
-my $commitMergeSw = "--commitMerge";
-if($noCommitMerge) {
-  $commitMergeSw = "";
-  $pushMergeSw = " ";
-}
-my $mergeMainBranchSw = " ";
-if($mergeMainBranch) {
-  $mergeMainBranchSw = "--mergeMainBranch";
-} else {
-  $mergeMainBranchSw = " ";
-  $commitMergeSw = " ";
-  $pushMergeSw = " ";
-}
-if(-d ".git") {
-  if(! $forceMerge) {
-    # don't merge if we're in a repo, only merge if above
-    $mergeMainBranchSw = " ";
-    $commitMergeSw = " ";
-    $pushMergeSw = " ";
-  }
-}
+my $output = " ";
+my $pwd = cwd();
 
 my $jSw = " ";
-if(defined($j) && ($j != 0)) {
+if($j) {
   $jSw = "-j $j";
 }
-
-my $cmd = "~/gitScripts/gitFetch.pl --pull --all --noxmessage";
-$cmd = "$cmd $mergeMainBranchSw $commitMergeSw $pushMergeSw $jSw";
-my $res = system($cmd);
-print("\n$cmd returned $res\n");
-if($res)
-{
-  $fail = 1;
-  $output = "Update FAILED: $cmd failed in $pwd";
+my $command = "newGitFetch --pull $j";
+print("Running $command\n");
+if(system($command)) {
+  $output = "$command failed";
   printAndExit();
 }
 
 if(chdir(".git")) {
   # we're in a git repo, don't run the 3rdparty stuff
-  $output = "Update SUCCEEDED in $pwd";
+  $output = "$scriptName SUCCEEDED in $pwd";
   printAndExit();
 }
 
 if($no3rdparty) {
   print("\nINFO: skipping update of 3rdparty repo\n");
 } else {
-  $cmd = "~/gitScripts/3rdpartyArtifactory";
-  $res = system($cmd);
+  my $cmd = "~/gitScripts/3rdpartyArtifactory";
+  my $res = system($cmd);
   print("\n$cmd returned $res\n");
   if($res)
   {
-    $output = "Update FAILED: $cmd failed in $pwd";
+    $output = "$scriptName FAILED: $cmd failed in $pwd";
     $fail = 1;
     printAndExit();
   }
 }
-$output = "Update SUCCEEDED in $pwd";
+$output = "$scriptName SUCCEEDED in $pwd";
 printAndExit();
 
 

@@ -12,10 +12,12 @@ use File::Basename;
 my $scriptName = basename($0);
 
 my $retries = 4;
+my $pull;
 my $help;
 my $debugMode;
 
-GetOptions("r:i" => \$retries, 
+GetOptions("r:i" => \$retries,
+           "pull" => \$pull,
            "debugMode" => \$debugMode, 
            "help|?" => \$help,
     ) or printHelp();
@@ -25,8 +27,9 @@ printHelp() if($help);
 print("\n");
 
 sub printHelp {
-  print("\n$scriptName [-r [retries]][--help|?]\n");
+  print("\n$scriptName [-r [retries]] [--pull] [--help|?]\n");
   print("\t-r [numb]: number of retries, default is $retries\n");
+  print("\t--pull: do a pull instad of a fetch (ie merge)\n");
   print("\t--debugMode: turn on debugMode (off by default)\n");
   print("\n\n");
   exit;
@@ -34,7 +37,11 @@ sub printHelp {
 
 my $here = cwd();
 print("\nRunning $scriptName in $here\n");
-my $command = "git fetch --progress";
+my $gitCommand = "fetch";
+if($pull) {
+  $gitCommand = "pull";
+}
+my $command = "git $gitCommand --progress";
 my $count = 0;
 while($count  < $retries) {
   print("Running $command in $here, count = $count\n");

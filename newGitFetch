@@ -42,22 +42,16 @@ sub run {
   }
   my $count = 0;
   print("\nRunning $scriptName in $here\n");
-  while($count < $retries) {
-    my $command = "git fetch --progress";
-    print("Running $command in $here, count = $count\n");
-    if(system($command)) {
-      print("\n$scriptName failed in $here, count = $count\n");
-      ++$count;
-      if($count >= $retries) {
-        print("\n$scriptName failed all retries in $here, count = $count\n");
-        return(2);
-      }
-    } else {
-      $count = $retries;
-    }
+  my $command = "gitFetchWrapper";
+  print("Running $command in $here,\n");
+  if(system($command)) {
+    print("\n$command failed in $here,\n");
+    return(2);
   }
+  print("\n$command passed in $here\n");
   return(0);
 }
+
 
 my $fail = GitModules::runCmd(\&run, $j, $debugMode);
 

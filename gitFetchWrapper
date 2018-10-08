@@ -1,0 +1,54 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use GitModules;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+
+my $scriptName = basename($0);
+
+my $retries = 4;
+my $help;
+my $debugMode;
+
+GetOptions("r:i" => \$retries, 
+           "debugMode" => \$debugMode, 
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+print("\n");
+
+sub printHelp {
+  print("\n$scriptName [-r [retries]][--help|?]\n");
+  print("\t-r [numb]: number of retries, default is $retries\n");
+  print("\t--debugMode: turn on debugMode (off by default)\n");
+  print("\n\n");
+  exit;
+}
+
+my $here = cwd();
+print("\nRunning $scriptName in $here\n");
+my $command = "git fetch --progress";
+my $count = 0;
+while($count  < $retries) {
+  print("Running $command in $here, count = $count\n");
+  if(system($command)) {
+    print("\n$scriptName failed in $here, count = $count\n");
+    ++$count;
+    if($count >= $retries) {
+      print("\n$scriptName failed all retries in $here, count = $count\n");
+      exit(2);
+    }
+  } else {
+    print("\n$scriptName passed in $here, count = $count\n");
+    exit(0);
+  }
+}
+print("\nERROR: Should not have gotten here: $here, count = $count\n");
+exit(3);

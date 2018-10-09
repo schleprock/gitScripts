@@ -76,7 +76,7 @@ sub checkOutBranch {
     return(0);
   }
   print("Fetching all remote branches for $dir\n");
-  my $cmd = "cd $dir; git fetch --progress";
+  my $cmd = "cd $dir; newGitFetch";
   if(system($cmd)) {
     my $err = "\nERROR: could not fetch from $dir\n";
     print("$err");
@@ -106,7 +106,7 @@ sub checkOutBranch {
   }
   $cmd = "cd $dir; git checkout $forceCmd -B $branch origin/$branch";
   if(system($cmd)) {
-    my $err = "\nERROR: could not checkout $branch\n\n";
+    my $err = "\nERROR: could not checkout $branch in $dir\n\n";
     print("$err");
     $failures->enqueue($err);
     return(1);

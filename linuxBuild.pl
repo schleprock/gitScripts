@@ -6,7 +6,7 @@ use Getopt::Long qw(:config pass_through);
 use Cwd;
 use Cwd 'chdir';
 
-my $buildType = "debug";
+my $buildType = "release";
 my $buildBits = 64;
 my $j;
 my $clean = 0;
@@ -44,7 +44,7 @@ sub printHelp
   print "build [--type <debug/release>] [--bits <32/64>]\n";
   print "\t[ --core | --fortranLibs || --designerUI || --simpSolver ]\n";
   print "\t[ --clean ] [--j numbCpus] [--help]\n\n";
-  print "default is -t debug -b 64\n";
+  print "default is -t $buildType -b 64\n";
   print "\t--type: type of build debug/release\n";
   print "\t--bits: 32/64 bit build\n";
   print "\t--core/fortranlibs/designerUI/simpSolver only build that sln\n";

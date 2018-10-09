@@ -29,6 +29,8 @@ sub printHelp
   exit 1;
 }
 
+my $pwd = getcwd;
+
 sub clean {
   my $here = $_[0];
   print("\nCleaning $here:\n");
@@ -44,9 +46,17 @@ sub clean {
  
 my $fail =  GitModules::runCmd(\&clean, $j, $debugMode);
 
-my $cmd = "rm -rf build_output";
-system($cmd);
-
+chdir($pwd);
+if(-d "build_output")
+{
+  print("INFO: deleting build_output\n");
+  my $cmd = "rm -rf build_output";
+  if(system($cmd))
+  {
+    print("ERROR: failed to delete build_output\n");
+    $fail = 1;
+  }
+}
 if(!$fail) {
   print("\n\ngit Clean completed successfully\n\n");
   exit(0);

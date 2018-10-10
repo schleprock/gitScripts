@@ -45,10 +45,11 @@ my $jSw = " ";
 if($j) {
   $jSw = "-j $j";
 }
-my $command = "newGitFetch --pull $j";
+my $command = "newGitFetch --pull $jSw";
 print("Running $command\n");
 if(system($command)) {
   $output = "$command failed";
+  $fail = 1;
   printAndExit();
 }
 

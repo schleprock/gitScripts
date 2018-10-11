@@ -52,7 +52,7 @@ sub run {
     return(1);
   }
   print("\nRunning $scriptName in $here\n");
-  my $command = "cd $here; gitFetchWrapper $gitCommand";
+  my $command = "cd $here; ~/gitScripts/gitFetchWrapper $gitCommand";
   print("Running $command in $here,\n");
   if(system($command)) {
     my $err = "\nERROR: $command failed in $here,\n";

@@ -1,0 +1,30 @@
+#! /usr/bin/env bash
+
+if ~/gitScripts/gitClean.pl; then
+    echo "git clean completed successfully"
+else
+    echo "git clean failed"
+    exit 1
+fi
+if [ -d 3rdparty ]; then
+    echo "Removing 3rdparty..."
+    if rm -rf 3rdparty; then
+        echo "Removed 3rdparty..."
+    else
+        echo "Removal of 3rdparty failed"
+        exit 2
+    fi
+else
+    echo "3rdparty alreay removed"
+fi
+# need to limit the parallel stuff as the network doesn't even reach
+# the level of crap. same goes for the POS TFS servers....
+echo "Running update..."
+if ~/gitScripts/gitUpdate --noxmessage -j 4; then
+    echo "git update completed successfully"
+else
+    echo "git update failed"
+    exit 3
+fi
+echo "Cleanup and Update completed successfully"
+exit 0

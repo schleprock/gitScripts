@@ -57,7 +57,13 @@ sub checkOutBranch {
     }
     return(0);
   }
-  my $cmd = "cd $dir; git branch -r | grep -i \"origin/${branch}\$\"";
+  my $cmd = "cd $dir; gitFetch";
+  if(system($cmd))
+  {
+    print("ERROR: Failed to fetch in $dir\n");
+    return(5);
+  }
+  $cmd = "cd $dir; git branch -r | grep -i \"origin/${branch}\$\"";
   my $output = qx/$cmd/;
   chomp($output);
   if($output) {

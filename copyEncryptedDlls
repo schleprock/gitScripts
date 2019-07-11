@@ -42,7 +42,7 @@ if(!$dllDir) {
 
 print("\nLocating directories named .library in encryptedLibDir: \n");
 print("\tdirectory $encryptedLibDir\n\nFound:\n");
-my @libraryDirs = qx/find $encryptedLibDir -type d -name .library/;
+my @libraryDirs = qx/find $encryptedLibDir -maxdepth 2 -type d -name .library/;
 chomp(@libraryDirs);
 foreach my $libDir(@libraryDirs) {
   print("\t$libDir\n");

@@ -8,6 +8,8 @@ use Getopt::Long;
 use Cwd;
 use Cwd 'chdir';
 use File::Basename;
+use threads;
+use Thread::Queue;
 
 my $scriptName = basename($0);
 my $j;
@@ -35,35 +37,54 @@ sub printHelp {
   exit;
 }
 
+my $failures = Thread::Queue->new();
+
 sub run {
   my $here = $_[0];
   if(!chdir($here)) {
-    print("\nERROR: cannot chdir to $here\n\n");
+    failed("cannot chdir to $here");
     return(1);
   }
   print("\nRunning $scriptName in $here\n");
   my $command = "cd $here; deleteGitRefs";
   if(system($command)) {
-    print("\n$command failed in $here\n");
+    failed("$command failed in $here");
     return(1);
   }
   $command = "cd $here; git gc";
   if(system($command)) {
-    print("\n$command failed in $here\n");
+    failed("$command failed in $here");
     return(1);
   }
   $command = "cd $here; newGitFetch";
   if(system($command)) {
-    print("\n$command failed in $here\n");
+    failed("$command failed in $here");
     return(2);
   }
   return(0);
+}
+
+sub failed {
+  my $err = $_[0];
+  print("\nERROR: $err\n");
+  $failures->enqueue($err);
+  return(1);
 }
 
 my $fail = GitModules::runCmd(\&run, $j, $debugMode);
 
 if(!$fail) {
   print("\n$scriptName completed successfully\n\n");
-} else {
-  print("\nERROR: $scriptName FAILED\n\n");
+  exit(0);
 }
+print("\nERROR: $scriptName FAILED\n\n");
+my $errDone = "0";
+while(!$errDone) {
+  if(defined(my $err = $failures->dequeue_nb())) {
+    print("\n$err\n");
+  } else {
+    $errDone = "1";
+  }
+}
+exit(1);
+

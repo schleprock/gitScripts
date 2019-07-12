@@ -5,6 +5,7 @@ use strict;
 use Getopt::Long;
 use Cwd;
 use Cwd 'chdir';
+use File::Basename;
 
 my $reposDir;
 my $noxmessage;
@@ -36,7 +37,12 @@ my @dirs;
 my @ls = qx/ls -1/;
 chomp(@ls);
 foreach my $dir(@ls) {
-  if(chdir("${dir}/simplorer/.git")) {
+  # skip test repo sets
+  my $baseDir = basename($dir);
+  chomp($baseDir);
+  if(($baseDir eq "testdebug") || ($baseDir eq "testrelease")) {
+    print("INFO: skipping dir: $dir\n");
+  } elsif(chdir("${dir}/simplorer/.git")) {
     push(@dirs, $dir);
     chdir($reposDir);
   }

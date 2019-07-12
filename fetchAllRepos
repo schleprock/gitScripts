@@ -57,8 +57,8 @@ foreach my $dir(@dirs) {
     print("ERROR: cannot chdir to $dir\n\n");
     exit 3;
   }
-  if(system("gitFetch.pl --noxmessage")) {
-    print("ERROR: gitFetch.pl in $dir failed\n\n");
+  if(system("gitFetch")) {
+    print("ERROR: gitFetch in $dir failed\n\n");
     exit 4;
   }
   chdir($reposDir);

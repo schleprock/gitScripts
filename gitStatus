@@ -1,0 +1,91 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use GitModules;
+use threads;
+use Thread::Queue;
+
+my $help;
+my $untracked;
+my $ignored;
+my $all;
+my $j;
+my $debugMode;
+
+GetOptions("untracked" => \$untracked, #show untracked files/dirs
+           "ignored" => \$ignored, #show ignored files/dirs
+           "all" => \$all, #show untracked, ignored files/dirs
+           "j:i" => \$j,
+           "debugMode" => \$debugMode,
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+my $collectedStatus = Thread::Queue->new();
+my $errors = Thread::Queue->new();
+
+sub printHelp
+{
+  print("\ngitStatus [--untracked] [--ignored] [--all] [-help|?]\n");
+  print("\t--untracked: show untracked files\n");
+  print("\t--ignored: show ignored files\n");
+  print("\t--all: show untracked and ignored files/dirs\n");
+  exit 1;
+}
+
+my $arg = "-uno";
+if($all || $untracked) {
+  $arg = "-unormal";
+}
+if($all || $ignored) {
+  $arg = "$arg --ignored";
+}
+my $statusCmd = "git status $arg";
+
+print("running $statusCmd\n\n");
+
+sub getStatus {
+  my $here = $_[0];
+  print("getting status for $here:\n");
+  my $cmd = "cd $here; $statusCmd";
+  my $output = qx/$statusCmd/;
+  if($?) {
+    print("\n\nERROR: gitStatus failed in $here\n\n");
+    $errors->enqueue("ERROR: gitStatus failed in $here");
+    return 1;
+  }
+  $collectedStatus->enqueue("Status for $here:\n$output");
+  return(0);
+}
+
+my $fail = GitModules::runCmd(\&getStatus, $j, $debugMode);
+
+my $collectDone = "0";
+while(!$collectDone) {
+  if(defined(my $status = $collectedStatus->dequeue_nb())) {
+    print("\n$status");
+  } else {
+    $collectDone = "1";
+  }
+}
+print("\nEnd of statuses\n");
+
+if(!$fail) {
+  print("\n\ngit status completed successfully\n\n");
+  exit(0);
+}
+my $errDone = "0";
+while(!$errDone) {
+  if(defined(my $err = $errors->dequeue_nb())) {
+    print("\n$err\n");
+  } else {
+    $errDone = "1";
+  }
+}
+print("\n\ngit status FAILED\n\n");
+exit(1);

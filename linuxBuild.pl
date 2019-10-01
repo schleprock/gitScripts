@@ -12,6 +12,7 @@ my $j;
 my $clean = 0;
 my $core;
 my $fortranLibs;
+my $threeDUI;
 my $designerUI;
 my $simpSolver;
 my $noxmessage;
@@ -23,6 +24,7 @@ GetOptions("type=s" => \$buildType, # debug, release ...
            "j=i" => \$j, # numb parallel builds
            "core" => \$core, #build on only core
            "fortranLibs" => \$fortranLibs, # build only fortranlibs
+           "threeDUI" => \$threeDUI, # build only 3D-UI
            "designerUI" => \$designerUI, # build only designerUI
            "simpSolver" => \$simpSolver, # build only simplorer solver
            "noxmessage" => \$noxmessage, # suppress xmessages
@@ -42,7 +44,8 @@ if($help) {
 sub printHelp
 {
   print "build [--type <debug/release>] [--bits <32/64>]\n";
-  print "\t[ --core | --fortranLibs || --designerUI || --simpSolver ]\n";
+  print "\t[ --core | --fortranLibs || --designerUI || --simpSolver ";
+  print " || --threeDUI ]\n";
   print "\t[ --clean ] [--j numbCpus] [--help]\n\n";
   print "default is -t $buildType -b 64\n";
   print "\t--type: type of build debug/release\n";
@@ -59,7 +62,7 @@ if(! -x "/usr/bin/xmessage") {
 }
 
 my $all = 1;
-if($core || $fortranLibs || $designerUI || $simpSolver) {
+if($core || $fortranLibs || $threeDUI || $designerUI || $simpSolver) {
   $all = 0;
 }
 
@@ -103,6 +106,18 @@ if($all || $core) {
 
 if($all || $fortranLibs) {
   my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/FortranLibs.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer/FortranLibs.build.out ; ( exit \${PIPESTATUS[0]} )";
+  print "\nexecing: $cmd\n\n";
+  if(system($cmd) != 0) {
+    print("ERROR: $cmd FAILED\n\n");
+    if(!$noxmessage) {
+      system("xmessage -center \"ERROR: $cmd FAILED\"");
+    }
+    exit 1;
+  }
+}
+
+if($all || $threeDUI) {
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/3D-ui.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer/FortranLibs.build.out ; ( exit \${PIPESTATUS[0]} )";
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");

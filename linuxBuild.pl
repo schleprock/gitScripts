@@ -117,7 +117,7 @@ if($all || $fortranLibs) {
 }
 
 if($all || $threeDUI) {
-  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/3D-ui.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer/FortranLibs.build.out ; ( exit \${PIPESTATUS[0]} )";
+  my $cmd = "./DevTools/build/scripts/BuildSln.pl --build ./DevTools/build/OfficialSln/3D-UI.sln --verbose --nparallel $numbCPUs $buildSwitch $cleanSwitch --nokeep-going | tee ./simplorer/FortranLibs.build.out ; ( exit \${PIPESTATUS[0]} )";
   print "\nexecing: $cmd\n\n";
   if(system($cmd) != 0) {
     print("ERROR: $cmd FAILED\n\n");

@@ -69,7 +69,7 @@ sub run {
   my $count = 0;
   print("\nRunning $scriptName in $here\n");
   # get current branch name
-  my $command = "cd $here; git rev-parse --abbrev-ref HEAD";
+  my $command = "cd $here; git symbolic-ref --short HEAD";
   my $branch = qx/$command/;
   if($? >> 8) {
     my $err = "\nERROR: $command failed here: $here\n\n";

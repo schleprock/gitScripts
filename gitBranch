@@ -38,7 +38,7 @@ sub run {
     return(1);
   }
   my $repo = basename($here);
-  my $command = "cd $here; git rev-parse --abbrev-ref HEAD";
+  my $command = "cd $here; git symbolic-ref --short HEAD";
   if($debugMode) {
     print("\nRunning: $command here: $here:\n");
   }

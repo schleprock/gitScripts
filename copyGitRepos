@@ -32,14 +32,28 @@ sub printHelp {
   print("\t-j [numb]: run commands in parallel\n");
   print("\t--debugMode: turn on debugMode (off by default)\n");
   print("\n\n");
-  exit;
+  exit 1;
 }
 
 if(! defined($destReposDir)) {
   print("ERROR: need a destination...\n");
   printHelp();
 }
-   
+
+my $pwd = cwd();
+
+if(! chdir($destReposDir)) {
+  print("ERROR: could not cd to destReposDir: $destReposDir\n");
+  printHelp();
+}
+my $destDirFull = cwd();
+print("\nINFO: Copying .git repos to $destDirFull\n\n");
+
+if(! chdir($pwd)) {
+  print("ERROR: can not chdir to $pwd\n");
+  printHelp();
+}
+
 my $failures = Thread::Queue->new();
 
 sub run {
@@ -50,7 +64,7 @@ sub run {
   }
   my $repoName = basename($here);
   print("\nRunning $scriptName in $here\n");
-  my $command = "mkdir ${destReposDir}/$repoName";
+  my $command = "mkdir ${destDirFull}/$repoName";
   print("Running command $command in $here.\n");
   if(system($command)) {
     my $err = "\nERROR: $command failed in $here,\n";
@@ -58,7 +72,7 @@ sub run {
     $failures->enqueue($err);
     return(2);
   }
-  $command = "cp -r $here/.git $destReposDir/$repoName";
+  $command = "cp -r $here/.git $destDirFull/$repoName";
   print("Running command $command in $here.\n");
   if(system($command)) {
     my $err = "\nERROR: $command failed in $here,\n";

@@ -8,10 +8,12 @@ use Cwd 'chdir';
 use File::Basename;
 
 my $reposDir;
+my $includeTestRepos;
 my $noxmessage;
 my $help;
 
 GetOptions("reposDir=s" => \$reposDir,
+           "includeTestRepos" => \$includeTestRepos,
            "noxmessage" => \$noxmessage,
            "help|?" => \$help) or printHelp();
 
@@ -19,7 +21,7 @@ printHelp() if($help);
 
 sub printHelp {
   print("\nfetchAllRepos [--reposDir <base dir of repos>] [--noxmessage]");
-  print(" [--help|?]\n");
+  print(" [--includeTestRepos] [--help|?]\n");
   print("\t--reposDir: dir of repos default /ansysdev/git\n");
   print("\t--noxmessage: suppress xmessage\n\n");
   exit 1;
@@ -40,7 +42,8 @@ foreach my $dir(@ls) {
   # skip test repo sets
   my $baseDir = basename($dir);
   chomp($baseDir);
-  if(($baseDir eq "testdebug") || ($baseDir eq "testrelease")) {
+  if(!$includeTestRepos && (($baseDir eq "testdebug") ||
+                            ($baseDir eq "testrelease"))) {
     print("INFO: skipping dir: $dir\n");
   } elsif(chdir("${dir}/simplorer/.git")) {
     push(@dirs, $dir);

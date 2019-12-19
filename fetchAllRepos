@@ -60,6 +60,7 @@ foreach my $dir(@dirs) {
     print("ERROR: cannot chdir to $dir\n\n");
     exit 3;
   }
+  print("Running gitFetch in $dir\n");
   if(system("gitFetch")) {
     print("ERROR: gitFetch in $dir failed\n\n");
     exit 4;

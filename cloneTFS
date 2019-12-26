@@ -52,7 +52,7 @@ if(!chdir($destRepoDir)) {
 $destRepoDir = getcwd();
 my $gitVersion = qx/git --version/;
 print("gitversion = $gitVersion\n");
-if($gitVersion =~ "msysgit")
+if($gitVersion =~ "windows")
 {
   # for msysgit have to use dos path for dest repo
   my $destRepoDos = qx/cygpath -m $destRepoDir/;

@@ -125,8 +125,11 @@ if($ret != 0) {
   }
   exit($ret);
 }
+my $kernelName = `uname -s`;
+print("kernelName = $kernelName\n");
+chomp($kernelName);
 my $modEncMan = "./simplorer/compiler/modelica/encryptedlibs.manifest";
-if(-f $modEncMan) {
+if(("$kernelName" ne "Linux") and (-f $modEncMan)) {
   print("\nGetting modelica encrypted libraries...\n");
   # grab the modelon encrypted libraries
   my $cmd = "$crappyEBUtool -u $user -p $passwd -s $artUrl $debugSwitch";
@@ -143,6 +146,8 @@ if(-f $modEncMan) {
     }
     exit($ret);
   }
+} else {
+  print("Skipping modelica-encrypted libs\n");
 }
 print("\nFixing permissions...\n");
 $cmd = "chmod -R 775 3rdparty";

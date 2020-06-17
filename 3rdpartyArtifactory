@@ -72,11 +72,11 @@ chomp($artUrl);
 print("\nUsing username: $user\n");
 print("artifactory URL: $artUrl\n");
 
-print("Checking username/passwd as the crappy ebu tool does not do this\n");
 my $silent = " -s ";
 if($debug) {
   $silent = " ";
 }
+# print("Checking username/passwd as the crappy ebu tool does not do this\n");
 # my $cmd = "curl -k $silent -u ${user}:${passwd} $artUrl";
 # my $output = qx/$cmd 2>&1/;
 # if($?) {

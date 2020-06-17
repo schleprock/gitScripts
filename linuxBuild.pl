@@ -74,6 +74,7 @@ if($clean) {
 
 my $numbCPUs = $ENV{NUMBER_OF_PROCESSORS};
 my $kernelName = `uname -s`;
+chomp($kernelName);
 if("$kernelName" eq "Linux") {
   $numbCPUs = `nproc`;
 }

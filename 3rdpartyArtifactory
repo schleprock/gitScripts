@@ -41,18 +41,9 @@ if(!-f "/usr/bin/xmessage") {
 }
 
 my $crappyEBUtool;
-if(-d "bldtools") {
-  # old bldtools stuff
-  $crappyEBUtool = "./bldtools/3rdparty-af/ebuartifact.sh";
-} elsif (-d "DevTools") {
+if(-d "DevTools") {
   # new crappy 3rdparty tool
-  my $newCrappy3rdpartyTool = 
-      "./DevTools/utilities/thirdparty_artifactory/thirdparty_download.sh";
-  if(-f $newCrappy3rdpartyTool) {
-    $crappyEBUtool = $newCrappy3rdpartyTool;
-  } else {
-    $crappyEBUtool = "./DevTools/utilities/3rdparty-af/ebuartifact.sh";
-  }
+  $crappyEBUtool = "./DevTools/git/ebuworkspace.sh";
 } else {
   print("\nERROR: no tools directory, either bldtools or DevTools.\n\t");
   print("\tMake sure you are in the directory above the repo's\n");
@@ -106,16 +97,33 @@ if($debug) {
 
 
 print("running $crappyEBUtool\n\n");
-my $debugSwitch = " ";
-if($debug) {
-  $debugSwitch = " -d ";
-}
-my $cmd = "$crappyEBUtool -u $user -p $passwd -s $artUrl $debugSwitch";
+print("first setup conan, even if it is already setup\n");
+my $cmd = "$crappyEBUtool conan-install";
 print("\nRunning command: \n$cmd\n\n");
 my $ret = system($cmd);
 print("\nCommand returned: $ret ...\n");
 my $cwd = getcwd();
-my $output = "SUCCESS: 3rdpartyArtifactory completed in ";
+my $output = "SUCCESS: conan setup completed in ";
+if($ret != 0) {
+  $output = "FAILED: conan setup failed in ";
+  $ret = 1;
+  print("\n\n$output $cwd\n\n");
+  if(! $noXmessage) {
+    my $cmd = "xmessage -center \"${output} $cwd\"";
+  }
+  exit($ret);
+}
+print("$output $cwd\n");
+my $debugSwitch = " ";
+if($debug) {
+  $debugSwitch = " -d ";
+}
+$cmd = "$crappyEBUtool get-3rdparty -u $user -p $passwd -s $artUrl $debugSwitch";
+print("\nRunning command: \n$cmd\n\n");
+$ret = system($cmd);
+print("\nCommand returned: $ret ...\n");
+$cwd = getcwd();
+$output = "SUCCESS: 3rdpartyArtifactory completed in ";
 if($ret != 0) {
   $output = "FAILED: 3rdpartyArtifactory failed in ";
   $ret = 1;
@@ -132,7 +140,7 @@ my $modEncMan = "./simplorer/compiler/modelica/encryptedlibs.manifest";
 if(("$kernelName" ne "Linux") and (-f $modEncMan)) {
   print("\nGetting modelica encrypted libraries...\n");
   # grab the modelon encrypted libraries
-  my $cmd = "$crappyEBUtool -u $user -p $passwd -s $artUrl $debugSwitch";
+  my $cmd = "$crappyEBUtool get-3rdparty -u $user -p $passwd -s $artUrl $debugSwitch";
   $cmd = "$cmd -m $modEncMan";
   print("\nRunning cmd: $cmd\n");
   my $ret = system($cmd);

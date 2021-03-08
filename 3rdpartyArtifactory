@@ -40,20 +40,15 @@ if(!-f "/usr/bin/xmessage") {
   $noXmessage = 1;
 }
 
-my $crappyEBUtool;
+my $crappyEBUtool = qx/dosPath/;
+chomp($crappyEBUtool);
 if(-d "DevTools") {
   # new crappy 3rdparty tool
-  $crappyEBUtool = "./DevTools/git/ebuworkspace.sh";
+  $crappyEBUtool = "${crappyEBUtool}/DevTools/git/ebuworkspace.sh";
 } else {
   print("\nERROR: no tools directory, either bldtools or DevTools.\n\t");
   print("\tMake sure you are in the directory above the repo's\n");
   exit(5);
-}
-
-if(! -e $crappyEBUtool) {
-  print("\nERROR: cannot find ebu tool: $crappyEBUtool\n");
-  print("\tMake sure you are in the directory above the repo's\n");
-  exit(1);
 }
 print("\nINFO: using $crappyEBUtool\n\n");
 chomp($user);
@@ -98,7 +93,7 @@ if($debug) {
 
 print("running $crappyEBUtool\n\n");
 print("first setup conan, even if it is already setup\n");
-my $cmd = "$crappyEBUtool conan-install";
+my $cmd = "cmd /c \"$crappyEBUtool conan-install\"";
 print("\nRunning command: \n$cmd\n\n");
 my $ret = system($cmd);
 print("\nCommand returned: $ret ...\n");
@@ -118,7 +113,7 @@ my $debugSwitch = " ";
 if($debug) {
   $debugSwitch = " -d ";
 }
-$cmd = "$crappyEBUtool get-3rdparty -u $user -p $passwd -s $artUrl $debugSwitch";
+$cmd = "cmd /c \"$crappyEBUtool get-3rdparty -u $user -p $passwd -s $artUrl $debugSwitch\"";
 print("\nRunning command: \n$cmd\n\n");
 $ret = system($cmd);
 print("\nCommand returned: $ret ...\n");
@@ -140,8 +135,8 @@ my $modEncMan = "./simplorer/compiler/modelica/encryptedlibs.manifest";
 if(("$kernelName" ne "Linux") and (-f $modEncMan)) {
   print("\nGetting modelica encrypted libraries...\n");
   # grab the modelon encrypted libraries
-  my $cmd = "$crappyEBUtool get-3rdparty -u $user -p $passwd -s $artUrl $debugSwitch";
-  $cmd = "$cmd -m $modEncMan";
+  my $cmd = "cmd /c \"$crappyEBUtool get-3rdparty -u $user -p $passwd -s $artUrl $debugSwitch";
+  $cmd = "$cmd -m $modEncMan\"";
   print("\nRunning cmd: $cmd\n");
   my $ret = system($cmd);
   if($ret != 0) {
@@ -153,6 +148,8 @@ if(("$kernelName" ne "Linux") and (-f $modEncMan)) {
       my $cmd = "xmessage -center \"${output} $cwd\"";
     }
     exit($ret);
+  } else {
+    print("SUCCESS: updated modelica encrypted libs and such\n\n");
   }
 } else {
   print("Skipping modelica-encrypted libs\n");

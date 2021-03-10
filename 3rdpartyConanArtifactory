@@ -1,0 +1,172 @@
+#! /usr/bin/env perl
+
+use strict;
+use Getopt::ArgvFile home=>1;
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+my $user;
+my $passwd;
+my $artUrl;
+my $debug;
+my $skipOld3rdParty;
+my $skipConan;
+my $skipEncLibs;
+my $noXmessage;
+my $help;
+
+GetOptions("user=s" => \$user,
+           "passwd=s" => \$passwd,
+           "artUrl=s" => \$artUrl,
+           "debug" => \$debug,
+           "skipOld3rdParty" => \$skipOld3rdParty,
+           "skipConan" => \$skipConan,
+           "skipEncLibs" => \$skipEncLibs,
+           "noxmessage" =>\$noXmessage,
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\nWrapper for ebu's artifactory tool which now includes conan. By default this script will read a config\n");
+  print("file: ~/.3rdpartyArtifactory , for comand line options set there. For example\n");
+  print("you can put:\n--user foo\n--passwd ...\n--artUrl http..\nIn the config file which\n");
+  print("the script will read first. If you put command line options, these will override\n");
+  print("whatever is in the config file.\n");
+  print("\n3rdpartyArtifactory [--user <user>] [--passwd <passwd>]\n");
+  print("\t[--artUrl <artifactory URL>] [--debug] [--skipOld3rdParty] \n");
+  print("\t[--skipConan] [--skipEncLibs] [--noxmessage] [--help] \n");
+  exit(1);
+}
+
+if(!-f "/usr/bin/xmessage") {
+  $noXmessage = 1;
+}
+my $output;
+my $devToolsDos = qx/dosPath/;
+my $devTools;
+chomp($devToolsDos);
+if(-d "DevTools") {
+  $devToolsDos = "${devToolsDos}/DevTools";
+  $devTools = "./DevTools";
+} else {
+  print("\nERROR: no DevTools directory.\n\t");
+  print("\tMake sure you are in the directory above the repo's\n");
+  exit(5);
+}
+print("\nINFO: using $devToolsDos\n\n");
+chomp($user);
+chomp($passwd);
+chomp($artUrl);
+
+print("\nUsing username: $user\n");
+print("artifactory URL: $artUrl\n");
+
+my $debugSw = " ";
+if($debug) {
+  $debugSw = " -d ";
+}
+my $pwd = cwd();
+my $cmd;
+my $err;
+
+if(!$skipOld3rdParty) {
+  # first run the old thirdparty tool
+  $cmd = "${devTools}/utilities/thirdparty_artifactory/thirdparty_download.sh -u $user -p $passwd -s $artUrl $debugSw";
+  print("Running old thirdparty tool: \n\t$cmd\n");
+  if(system($cmd)) {
+    $err = "\nERROR: old thirdparty tool failed in $pwd\n\n";
+    print($err);
+    if(! $noXmessage) {
+      system("xmessage -center \"$err\"");
+    }
+    exit(3);
+  }
+}
+
+if(!$skipConan) {
+  # run conan
+  my $conanTool = "/utilities/thirdparty_conan/conan_3rdparty.sh";
+  my $conanToolDos = "${devToolsDos}${conanTool}";
+  if(!-e "${devTools}${conanTool}") {
+    print("\nWARN: conan tool does not exist, skipping\n");
+  } else {
+    if(0) {
+      # perform install because...
+      print("\nPerform conan-install whether we need to or not\n");
+      $cmd = "cmd /c \"$conanToolDos conan-install\"";
+      print("Executing: $cmd\n\n");
+      if(system($cmd)) {
+        $err = "\nERROR: conan install failed in $devToolsDos\n\n";
+        print($err);
+        if(!$noXmessage) {
+          system("xmessage -center \"$err\"");
+        }
+        exit(4);
+      }
+      print("\nConan install successful\n");
+    }
+    # perform conan update
+    print("\nPerform conan update 3rdParty\n");
+    $cmd = "cmd /c \"$conanToolDos get-3rdParty\"";
+    print("Executing: $cmd\n\n");
+    if(system($cmd)) {
+      $err = "\nERROR: conan update failed in $devToolsDos\n\n";
+      print($err);
+      if(!$noXmessage) {
+        system("xmessage -center \"$err\"");
+      }
+      exit(5);
+    }
+    print("\nConan update successful\n");
+  }
+}
+
+if(!$skipEncLibs) {
+  print("\nUpdating encrypted libs\n");
+  my $kernelName = `uname -s`;
+  print("kernelName = $kernelName\n");
+  chomp($kernelName);
+  my $modEncMan = "./simplorer/compiler/modelica/encryptedlibs.manifest";
+  if(("$kernelName" ne "Linux") and (-f $modEncMan)) {
+    print("\nGetting modelica encrypted libraries...\n");
+    # grab the modelon encrypted libraries
+    $cmd = "${devTools}/utilities/thirdparty_artifactory/thirdparty_download.sh -u $user -p $passwd -s $artUrl $debugSw";
+    $cmd = "$cmd -m $modEncMan";
+    print("\nRunning cmd: $cmd\n");
+    my $ret = system($cmd);
+    if($ret != 0) {
+      $output = "FAILED: 3rdpartyArtifactory failed to extract ";
+      $output = "$output modelica encrypted libraries";
+      $ret = 1;
+      print("\n\n$output in \n\t$pwd\n\n");
+      if(! $noXmessage) {
+        my $cmd = "xmessage -center \"${output} $pwd\"";
+      }
+      exit($ret);
+    } else {
+      print("SUCCESS: updated modelica encrypted libs and such\n\n");
+    }
+  } else {
+    print("Skipping modelica-encrypted libs\n");
+  }
+} else {
+  print("Skipping modelica-encrypted libs\n");
+}
+
+print("\nFixing permissions...\n");
+$cmd = "chmod -R 775 3rdparty";
+my $res = system($cmd);
+$output = "SUCCESS: 3rdpartyArtifactory completed in $pwd";
+if($res)
+{
+  $output = "FAILED: failed to $cmd in $pwd";
+}
+if(! $noXmessage) {
+  my $cmd = "xmessage -center \"${output}\"";
+}
+print("\n\n$output\n\n");
+exit($res);

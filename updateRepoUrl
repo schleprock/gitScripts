@@ -1,0 +1,183 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use threads;
+use Thread::Queue;
+
+# create a shared queue
+my $queue = Thread::Queue->new();
+my $endOfQueueMarker = "ENDOFQUEUEMARKER";
+my $pwd = getcwd();
+
+my $pull;
+my $noXmessage;
+my $help;
+
+GetOptions("pull" => \$pull,
+           "noxmessage" => \$noXmessage,
+           "help|?" => \$help,
+    ) or printHelp();
+printHelp() if($help);
+
+my $gitCmd = "fetch";
+if($pull) {
+    $gitCmd = "pull";
+}
+
+sub printHelp
+{
+  print("\ngitFetch [--pull] [-help|?]\n");
+  print("\t--pull: performs a pull, git fetch followed by git merge\n");
+  print("\t--noxmessage: suppresses xmessage notification\n\n");
+  exit 1;
+}
+
+sub update
+{
+  if(!chdir($pwd)) {
+    print("\nERROR: cannot chdir to $pwd\n\n");
+    return 1;
+  }
+  my $error = "0";
+  my $done = "0";
+  while(!$done) {
+    my $dir = $queue->dequeue();
+    #print("dir = $dir\n");
+    if(defined($dir) && ($dir ne $endOfQueueMarker)) {
+      my $cmd;
+      my $here = "${pwd}/${dir}";
+      if($dir eq ".") {
+        $here = $pwd;
+      }
+      if(!-d($here)) {
+        print("ERROR: $here is not a directory\n");
+        return 1;
+      }
+      print("\nRunning git $gitCmd $here:\n");
+      $cmd = "cd $here; git $gitCmd 2>&1";
+      my @gitRet = qx/$cmd/;
+      #print("$cmd return: $?\n");
+      chomp(@gitRet);
+      foreach my $line(@gitRet) {
+        if($line !~ m/igncr/) {
+          print("$line\n");
+        }
+      }
+      if($?) {
+        print("\n\nERROR: $cmd failed in $here\n\n");
+        ++$error;
+      } else {
+        print("\nUpdate of $here, complete\n");
+      }
+    } else {
+      return $error;
+    }
+  }
+}
+
+sub myPrint {
+  my $done = "0";
+  while(!$done) {
+    my $count = $queue->dequeue();
+    if((defined($count)) && ($count != "-1")) {
+      my $cmd = "xterm -e \"echo crap $count; sleep 3\"";
+      system($cmd);
+    }
+    if($count == "-1") {
+      $done = "1";
+    }
+  }
+  return 0;
+}
+
+# figure out how many processors
+my $numProc = $ENV{NUMBER_OF_PROCESSORS};
+if(defined($numProc)) {
+  print("$numProc processors detected\n");
+} else {
+  print("cannot determine numb of processors, using 4\n");
+  $numProc = "4";
+}
+
+# find all repo's
+my $numRepos = "0";
+if(chdir(".git")) {
+  chdir($pwd);
+  $queue->enqueue(".");
+  ++$numRepos;
+} else {
+  my @ls = qx/ls -1/;
+  chomp(@ls);
+  foreach my $dir(@ls) {
+    if(chdir("${dir}/.git")) {
+      $queue->enqueue("$dir");
+      ++$numRepos;
+      chdir($pwd);
+    }
+  }
+}
+print("numRepos = $numRepos\n");
+if($numRepos eq "0") {
+  print("No repositories found in $pwd\n\n");
+  exit 2;
+}
+
+for(my $count = 0; $count < $numRepos; ++$count) {
+  $queue->enqueue($endOfQueueMarker);
+}
+
+# create a thread per cpu up to numProc or numb of repos
+my @myThreads;
+for(my $count = "0"; (($count < $numProc) &&
+                      ($count < $numRepos)); ++$count) {
+  print("Creating queue $count\n");
+  $myThreads[$count] = threads->new(\&update);
+}
+
+# wait for threads to finish
+$| = 1;
+my $done = "0";
+while(!$done) {
+  my $numReposLeft = "0";
+  $done = "1";
+  sleep("1");
+  for(my $count = 0; (($count < $numProc) && 
+                      ($count < $numRepos)); ++$count) {
+    if(!$myThreads[$count]->is_joinable()) {
+      ++$numReposLeft;
+      $done = "0";
+    }
+  }
+  print("$numReposLeft ");
+}
+# reap all the myThreads
+my $fail = "0";
+for(my $count = 0; (($count < $numProc) && 
+                    ($count < $numRepos)); ++$count) {
+  my $ret = $myThreads[$count]->join();
+  if($ret) {
+    print("\n\nERROR: update failed\n\n");
+    $fail = "1";
+  }
+}
+if(!$noXmessage && (-f "/usr/bin/xmessage")) {
+  my $output;
+  if(!$fail) {
+    $output = "SUCCESS: ";
+  } else {
+    $output = "FAILED: ";
+  }
+  my $cmd = "xmessage -center \"${output}git update in $pwd\"";
+  system($cmd);
+}
+if(!$fail) {
+  print("\n\nUpdate completed successfully\n\n");
+  exit 0;
+} else {
+  print("\n\nUpdate FAILED\n\n");
+  exit 1;
+}

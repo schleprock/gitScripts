@@ -1,0 +1,76 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use GitModules;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+use Term::ANSIColor;
+
+my $j;
+my $help;
+my $debugMode;
+
+GetOptions("j:i" => \$j, #run commands in parallel
+           "debugMode" => \$debugMode, 
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+print("\n");
+
+sub printHelp {
+  print("\ngitBranch [-j [numb]][--help|?]\n");
+  print("\t--j [numb]: run commands in parallel\n");
+  print("\t--debugMode: turn on debugMode (off by default)\n");
+  print("\n\n");
+  exit;
+}
+
+sub run {
+  my $here = $_[0];
+  if(!chdir($here)) {
+    print("\nERROR: cannot chdir to $here\n\n");
+    return(1);
+  }
+  my $repo = GitModules::gitRepoName($here);
+  my $command = "cd $here; git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \\(.*\\)/\\1/'";
+  if($debugMode) {
+    print("\nRunning: $command here: $here:\n");
+  }
+  my $branch = qx!$command!;
+  if($? >> 8) {
+    print("\nERROR: $command failed here: $here\n\n");
+    return(1);
+  }
+  chomp($branch);
+  if(($branch ne "develop") && ($branch ne "master")) {
+    print color 'bold blue';
+  }
+  print("$repo: ");
+  print color 'reset';
+  if(($branch ne "develop" && ($branch ne "master"))) {
+    print color 'bold red';
+  }
+  print("$branch\n");
+  print color 'reset';
+  return(0);
+}
+
+my $fail = 0;
+my $repoName = GitModules::gitRepoName(getcwd());
+if(length $repoName) {
+  run(getcwd());
+} else {
+  $fail = GitModules::runCmd(\&run, $j, $debugMode);
+}
+
+if(!$fail) {
+  print("\n\ngitBranch completed successfully\n\n");
+} else {
+  print("\n\ngitBranch FAILED\n\n");
+}

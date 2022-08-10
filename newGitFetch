@@ -1,0 +1,84 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use GitModules;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+use threads;
+use Thread::Queue;
+
+my $scriptName = basename($0);
+
+my $retries = 5;
+my $j;
+my $pull;
+my $help;
+my $debugMode;
+
+GetOptions("r:i" => \$retries, 
+           "j:i" => \$j, #run commands in parallel
+           "pull" => \$pull,
+           "debugMode" => \$debugMode, 
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+sub printHelp {
+  print("\n$scriptName [-j [numb]][-r [numb]] [--help|?]\n");
+  print("\t-j [numb]: run commands in parallel\n");
+  print("\t-r [numb]: number of retries, default is $retries\n");
+  print("\t--pull: do a pull instad of a fetch (ie merge)\n");
+  print("\t--debugMode: turn on debugMode (off by default)\n");
+  print("\n\n");
+  exit;
+}
+
+my $failures = Thread::Queue->new();
+
+my $gitCommand = "-r $retries";
+if($pull) {
+  $gitCommand = "$gitCommand --pull";
+}
+
+sub run {
+  my $here = $_[0];
+  if(!chdir($here)) {
+    print("\nERROR: cannot chdir to $here\n\n");
+    return(1);
+  }
+  print("\nRunning $scriptName in $here\n");
+  my $command = "cd $here; ~/gitScripts/gitFetchWrapper $gitCommand";
+  print("Running $command in $here,\n");
+  if(system($command)) {
+    my $err = "\nERROR: $command failed in $here,\n";
+    print("$err");
+    $failures->enqueue($err);
+    return(2);
+  }
+  print("\n$command passed in $here\n");
+  return(0);
+}
+
+
+my $fail = GitModules::runCmd(\&run, $j, $debugMode);
+
+if(!$fail) {
+  print("\n$scriptName completed successfully\n\n");
+  exit(0);
+}
+print("\nERROR: $scriptName FAILED\n\n");
+
+my $errDone = "0";
+while(!$errDone) {
+  if(defined(my $err = $failures->dequeue_nb())) {
+    print("\n$err\n");
+  } else {
+    $errDone = "1";
+  }
+}
+exit(1);

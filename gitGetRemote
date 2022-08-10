@@ -1,0 +1,44 @@
+#! /usr/bin/env perl
+
+use strict;
+use GitModules;
+use Cwd;
+use File::Basename;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+my $repoDir;
+my $help;
+
+GetOptions("repoDir=s" => \$repoDir, #path to repo
+           "help|?" => \$help,
+    ) or printHelp();
+
+if($help) {
+  printHelp();
+  exit 1;
+}
+
+sub printHelp
+{
+  print("gitGetRemote [--repoDir] [--help|?]\n");
+  print("\t--repoDir: repo to get remote from, default is .\n");
+  exit;
+}
+
+if($repoDir) {
+  if(!chdir($repoDir)) {
+    print("\nERROR: could not chdir to $repoDir\n\n");
+    exit 2;
+  }
+}
+my $cmd = "git config --get remote.origin.url";
+my $currentRemote = qx/$cmd/;
+if($?) {
+  print("ERROR: $cmd failed\n");
+  exit 3;
+}
+print("$currentRemote");
+exit 0;

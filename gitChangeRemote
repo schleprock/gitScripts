@@ -1,0 +1,50 @@
+#! /usr/bin/env perl
+
+use strict;
+use GitModules;
+use Cwd;
+use File::Basename;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+my $remote;
+my $repoDir;
+my $help;
+
+GetOptions("remote=s" => \$remote, #remote to set
+           "repoDir=s" => \$repoDir, #path to repo
+           "help|?" => \$help,
+    ) or printHelp();
+
+if($help) {
+  printHelp();
+  exit 1;
+}
+
+sub printHelp
+{
+  print("gitChangeRemote --remote <remote> [--repoDir <dir>] [--help|?]\n");
+  print("\t--remote: remote URL to set\n");
+  print("\t--repoDir: repo to get remote from, default is .\n");
+  exit;
+}
+
+if(!$remote) {
+  print("ERROR: must provide a remote URL\n\n");
+  exit 4;
+}
+
+if($repoDir) {
+  if(!chdir($repoDir)) {
+    print("\nERROR: could not chdir to $repoDir\n\n");
+    exit 2;
+  }
+}
+my $cmd = "git remote set-url origin \"$remote\"";
+if(system($cmd)) {
+  print("ERROR: $cmd failed\n");
+  exit 3;
+}
+exit 0;

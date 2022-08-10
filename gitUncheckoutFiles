@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+gitStatus.pl | grep "^\s*modified:" | awk '{print $2}' | xargs -n 1 git checkout --

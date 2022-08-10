@@ -1,0 +1,100 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+use GitModules;
+
+my $branch;
+my $j;
+my $help;
+my $noXmessage = 0;
+my $debugMode;
+my $help;
+
+GetOptions("branch=s" => \$branch,
+           "j:i" => \$j, #run commands in parallel
+           "noxmessage" => \$noXmessage, #disable xmessage
+           "debugMode" => \$debugMode, 
+           "help|?" => \$help
+    ) or printHelp();
+
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\ncreateNewBranch [-help|?] --branch <name>\n");
+  print("\n\tThis script will create a new branch, \"branch name\", push ");
+  print("it to origin\n\tand ");
+  print("set up tracking only if the branch does not already exist.\n\n");
+  exit 1;
+}
+
+printHelp() if($help);
+
+if(!$branch) {
+  print("\n\nERROR: no branch name given.\n");
+  printHelp();
+}
+
+my $fail = GitModules::runCmd(\&checkOutBranch, $j, $debugMode);
+
+sub checkOutBranch {
+  my $dir = $_[0];
+  chdir($dir) or die("\nERROR: could not chdir to $dir\n\n");
+  my $currentBranch = qx/cd $dir; git symbolic-ref --short HEAD/;
+  chomp($currentBranch);
+  if(lc($currentBranch) eq lc($branch)) {
+    print("\nINFO: local branch $branch already exists in $dir (NOTE: names");
+    print("\n are case insensitive). \n\n");
+    my $cmd = "cd $dir; git checkout $branch";
+    if(system($cmd)) {
+      print("\nERROR: failed to checkout local branch $branch in $dir\n\n");
+      return(1);
+    }
+    return(0);
+  }
+  my $cmd = "cd $dir; gitFetch";
+  if(system($cmd))
+  {
+    print("ERROR: Failed to fetch in $dir\n");
+    return(5);
+  }
+  $cmd = "cd $dir; git branch -r | grep -i \"origin/${branch}\$\"";
+  my $output = qx/$cmd/;
+  chomp($output);
+  if($output) {
+    print("\nINFO: remote branch origin/$branch already exists in $dir.\n");
+    print("(NOTE: names are ");
+    print("case insensitive).\n\n");
+    my $cmd = "cd $dir; git checkout $branch";
+    if(system($cmd)) {
+      print("\nERROR: failed to checkout local branch $branch in $dir\n\n");
+      return(1);
+    }
+    return(0);
+  }
+  $cmd = "cd $dir; git checkout -b $branch";
+  if(system($cmd)) {
+    print("ERROR: $cmd failed\nexiting\n\n");
+    return(1);
+  }
+  $cmd = "cd $dir; git push -u origin $branch";
+  if(system($cmd)) {
+    print("ERROR: $cmd failed\nexiting\n\n");
+    return(1);
+  }
+  $cmd = "cd $dir; git branch -vv";
+  system($cmd);
+  print("\nSUCCESS: $branch created and pushed to origin\n\n");
+  return(0);
+}
+
+if(!$fail) {
+  print("\n\nSuccess\n\n");
+} else {
+  print("\n\nFAILED\n\n");
+}

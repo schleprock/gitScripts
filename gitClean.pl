@@ -1,0 +1,73 @@
+#! /usr/bin/env perl
+
+use strict;
+use GitModules;
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use threads;
+use Thread::Queue;
+
+$| = 1; # set autoflush
+
+my $errors = Thread::Queue->new();
+
+my $help;
+my $j;
+my $debugMode;
+
+GetOptions("j:i" => \$j,
+           "debugMode" => \$debugMode,
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\ngitClean [--j <int> ] [--debugMode]  [-help|?]\n");
+  exit 1;
+}
+
+my $pwd = getcwd;
+
+sub clean {
+  my $here = $_[0];
+  print("\nCleaning $here:\n");
+  my $cmd = "cd $here; git clean -fxd -f";
+  if(system($cmd)) {
+    print("\n\nERROR: git clean failed in $here\n\n");
+    $errors->enqueue("ERROR: git clean failed in $here");
+    return 1;
+  }
+  print("\ngit clean of $here complete\n");
+  return(0);
+}
+ 
+my $fail =  GitModules::runCmd(\&clean, $j, $debugMode);
+
+chdir($pwd);
+if(-d "build_output")
+{
+  print("INFO: deleting build_output\n");
+  my $cmd = "rm -rf build_output";
+  if(system($cmd))
+  {
+    print("ERROR: failed to delete build_output\n");
+    $fail = 1;
+  }
+}
+if(!$fail) {
+  print("\n\ngit Clean completed successfully\n\n");
+  exit(0);
+}
+my $errDone = "0";
+while(!$errDone) {
+  if(defined(my $err = $errors->dequeue_nb())) {
+    print("\n$err\n");
+  } else {
+    $errDone = "1";
+  }
+}
+print("\n\ngit Clean FAILED\n\n");
+exit(1);

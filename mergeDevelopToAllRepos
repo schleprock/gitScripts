@@ -1,0 +1,122 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use GitModules;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+use threads;
+use Thread::Queue;
+
+my $scriptName = basename($0);
+
+my $mergeBranch;
+my $j;
+my $help;
+my $noXmessage = 0;
+my $debugMode;
+
+GetOptions("mergeBranch=s" => \$mergeBranch,
+           "j:i" => \$j, #run commands in parallel
+           "noxmessage" => \$noXmessage, #disable xmessage
+           "debugMode" => \$debugMode, 
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+print("\n");
+
+sub printHelp {
+  print("\n$scriptName [--mergeBranch <branch>] [--j [numb]][--help|?]\n");
+  print("\nNOTE: this command does not push any changes. you'll need to do\n");
+  print("\tthat yourself\n\n");
+  print("\t--mergeBranch [branch]: branch to merge into repo, if not ");
+  print("specified, \n\t\tthen merge develop\n");
+  print("\t--j [numb]: run commands in parallel\n");
+  print("\t--debugMode: turn on debugMode (off by default)\n");
+  print("\t--noxmessage: suppress xmessage\n");
+  print("\n\n");
+  exit;
+}
+
+my $pwd = getcwd();
+
+if(!$mergeBranch) {
+  $mergeBranch = "develop";
+}
+
+print("\nFetching all repo's\n");
+my $command = "newGitFetch";
+if(system($command)) {
+  print("\nERROR: $command FAILED\n");
+  exit(2);
+}
+
+my $failures = Thread::Queue->new();
+
+sub run {
+  my $here = $_[0];
+  if(!chdir($here)) {
+    my $err = "\nERROR: cannot chdir to $here\n\n";
+    print("$err");
+    $failures->enqueue($err);
+    return(1);
+  }
+  my $count = 0;
+  print("\nRunning $scriptName in $here\n");
+  # get current branch name
+  my $command = "cd $here; git symbolic-ref --short HEAD";
+  my $branch = qx/$command/;
+  if($? >> 8) {
+    my $err = "\nERROR: $command failed here: $here\n\n";
+    print("$err");
+    $failures->enqueue($err);
+    return(1);
+  }
+  chomp($branch);
+  if($branch eq $mergeBranch) {
+    print("\nINFO: $here is $branch, skipping\n");
+    return(0);
+  }
+  $command = "cd $here; git merge origin/${mergeBranch}";
+  if(system($command)) {
+    my $err = "\nERROR: merge failed in $here\n";
+    $command = "git merge --abort";
+    system($command);
+    print("$err");
+    $failures->enqueue($err);
+    return(1);
+  }
+  return(0);
+}
+
+my $fail = GitModules::runCmd(\&run, $j, $debugMode);
+
+if(!$noXmessage && (-f "/usr/bin/xmessage")) {
+  my $output;
+  if(!$fail) {
+    $output = "SUCCESS: ";
+  } else {
+    $output = "FAILED: ";
+  }
+  my $cmd = "xmessage -center \"${output}$scriptName in $pwd\"";
+  system($cmd);
+}
+if(!$fail) {
+  print("\n\n$scriptName completed successfully\n\n");
+  exit(0);
+}
+print("\n\n$scriptName FAILED\n\n");
+my $errDone = "0";
+while(!$errDone) {
+  if(defined(my $err = $failures->dequeue_nb())) {
+    print("\n$err\n");
+  } else {
+    $errDone = "1";
+  }
+}
+exit(1);

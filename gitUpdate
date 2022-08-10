@@ -1,0 +1,89 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use GitModules;
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+
+my $scriptName = basename($0);
+
+my $noxmessage;
+my $j;
+my $no3rdparty;
+my $help;
+
+GetOptions("noxmessage" => \$noxmessage,
+           "j:i" => \$j,
+           "no3rdparty" => \$no3rdparty,
+           "help|?" => \$help,
+    ) or printHelp();
+
+if($help) {
+  printHelp();
+}
+
+sub printHelp
+{
+  print("\n$scriptName [--noxmessage] [-j <int>] ");
+  print("[--no3rdparty] [--help]\n\n");
+  print("Update a set of repo's or just a single repo.\n");
+  print("\t--noxmessage: suppress xmessage\n");
+  print("\t-j <int>: set parallel limit, default is all cpu's\n");
+  print("\t--no3rdparty: do not update 3rdparty\n");
+  print("\t--help: print help\n");
+  exit 1;
+}
+
+my $fail = 0;
+my $output = " ";
+my $pwd = cwd();
+
+my $jSw = " ";
+if($j) {
+  $jSw = "-j $j";
+}
+my $command = "~/gitScripts/newGitFetch --pull -r 2 $jSw";
+print("Running $command\n");
+if(system($command)) {
+  $output = "$command failed";
+  $fail = 1;
+  printAndExit();
+}
+
+if(chdir(".git")) {
+  # we're in a git repo, don't run the 3rdparty stuff
+  $output = "$scriptName SUCCEEDED in $pwd";
+  printAndExit();
+}
+
+if($no3rdparty) {
+  print("\nINFO: skipping update of 3rdparty repo\n");
+} else {
+  my $cmd = "~/gitScripts/3rdpartyArtifactory";
+  my $res = system($cmd);
+  print("\n$cmd returned $res\n");
+  if($res)
+  {
+    $output = "$scriptName FAILED: $cmd failed in $pwd";
+    $fail = 1;
+    printAndExit();
+  }
+}
+$output = "$scriptName SUCCEEDED in $pwd";
+printAndExit();
+
+
+
+sub printAndExit
+{
+  print("\n$output\n\n");
+  if(!$noxmessage && (-f "/c/WINDOWS/system32/msg")) 
+  {
+    my $cmd = "msg wschilp /TIME:1000000 \"${output}\"";
+    system($cmd);
+  }
+  exit($fail);
+}

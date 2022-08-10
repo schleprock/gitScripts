@@ -1,0 +1,73 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+
+my $dllDir;
+my $encryptedLibDir;
+my $help;
+
+my @dlls = ('en_US_Security.dll', 'ngcore.dll', 'pthreadVC2.dll');
+
+GetOptions("dllDir=s" => \$dllDir,
+           "encryptedLibDir=s" => \$encryptedLibDir,
+           "help|?" => \$help
+    ) or printHelp();
+
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\ncopyEncryptedDlls [--dllDir <dllDir>] [--encryptedLibDir <dir>] ");
+  print("[--help|?]\n\n");
+  print("\t--dllDir: directory containing the dll's to copy, default is .\n");
+  print("\t--encryptedLibDir: base directory of the encrypted libraries, ");
+  print("default\n\t\t is .\n");
+  print("\t--help|?: print help\n\n");
+  exit 0;
+}
+
+my $pwd = cwd();
+print("pwd: $pwd\n");
+if(!$encryptedLibDir) {
+  $encryptedLibDir = $pwd;
+}
+if(!$dllDir) {
+  $dllDir = $pwd;
+}
+
+print("\nLocating directories named .library in encryptedLibDir: \n");
+print("\tdirectory $encryptedLibDir\n\nFound:\n");
+my @libraryDirs = qx/find $encryptedLibDir -maxdepth 2 -type d -name .library/;
+chomp(@libraryDirs);
+foreach my $libDir(@libraryDirs) {
+  print("\t$libDir\n");
+}
+if(scalar @libraryDirs == 0) {
+  print("ERROR: no encrypted library directories found\n\n");
+  exit 1;
+}
+#ensure dll's exist in dllDir
+foreach my $dll(@dlls) {
+  if(! -e "$dllDir/$dll") {
+    print("ERROR: cannot find $dll in $dllDir\n\n");
+    exit 2;
+  }
+}
+print("Found dll's in dllDir\n");
+
+#if we get here then we have dll's and libs, so do it
+foreach my $libDir(@libraryDirs) {
+  foreach my $dll(@dlls) {
+    my $cmd = "cp -f $dllDir/$dll $libDir";
+    if(system($cmd)) {
+      print("ERROR: $cmd failed\n\n");
+      exit 3;
+    }
+  }
+}
+print("\nSUCCESS\n");

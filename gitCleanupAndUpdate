@@ -1,0 +1,83 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use GitModules;
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+
+my $scriptName = basename($0);
+
+my $noxmessage;
+my $j;
+my $no3rdparty;
+my $help;
+
+GetOptions("noxmessage" => \$noxmessage,
+           "j:i" => \$j,
+           "no3rdparty" => \$no3rdparty,
+           "help|?" => \$help,
+    ) or printHelp();
+
+if($help) {
+  printHelp();
+}
+
+sub printHelp
+{
+  print("\n$scriptName [--noxmessage] [-j <int>] ");
+  print("[--no3rdparty] [--help]\n\n");
+  print("Cleanup and update a set of repos.\n");
+  print("\t--noxmessage: suppress xmessage\n");
+  print("\t-j <int>: set parallel limit, default is all cpu's\n");
+  print("\t--no3rdparty: do not update 3rdparty\n");
+  print("\t--help: print help\n");
+  exit 1;
+}
+
+my $command = "~/gitScripts/gitClean.pl";
+print("Running $command\n");
+if(system($command)) {
+  print("$command failed\n");
+  exit 1;
+} else {
+  print("$command successful\n");
+}
+if(-d "3rdparty") {
+  print("Removing 3rdparty\n");
+  $command = "rm -rf 3rdparty";
+  if(system($command)) {
+    print("$command failed\n");
+    exit 1;
+  } else {
+    print("$command successful\n");
+  }
+} else {
+  print("3rdparty already deleted\n");
+}
+# need to limit the parallel stuff as the network doesn't even reach
+# the level of crap. same goes for the POS TFS servers....
+print("Running update\n");
+my $no3rdSW = " ";
+if($no3rdparty) {
+  $no3rdSW = " --no3rdparty ";
+}
+my $jSW = " ";
+if($j) {
+  $jSW = " -j $j ";
+}
+my $noxSW = " ";
+if($noxmessage) {
+  $noxSW = " --noxmessage ";
+}
+$command = "~/gitScripts/gitUpdate $no3rdSW $jSW $noxSW";
+print("Running $command\n");
+if(system($command)) {
+  print("$command failed\n");
+  exit 1;
+} else {
+  print("$command successful\n");
+}
+exit 0;

@@ -1,0 +1,130 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+use GitModules;
+use threads;
+use Thread::Queue;
+
+
+my $branch;
+my $j;
+my $force;
+my $noXmessage = 0;
+my $debugMode;
+my $help;
+
+GetOptions("branch=s" => \$branch,
+           "j:i" => \$j, #run commands in parallel
+           "force" => \$force, #force a reset to new branch
+           "noxmessage" => \$noXmessage, #disable xmessage
+           "debugMode" => \$debugMode, 
+           "help|?" => \$help
+    ) or printHelp();
+
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\ncheckOutRemoteBranch [-help|?] [-j num] --branch <name> ");
+  print("[--force]\n");
+  print("\n\tThis script will checkout the remote branch with \"");
+  print("branch name\" \n\tif it exists in any of the repos.\n");
+  print("\tIf the remote branch does not exist in the repo, the script ");
+  print("will\n\tcheckout develop. NOTE: this script does NOT update ");
+  print("the repo but does\n\tdo a fetch\n\n");
+  print("\t--force: force a reset to new branch\n");
+  exit 1;
+}
+
+printHelp() if($help);
+
+if(!$branch) {
+  print("\n\nERROR: no branch name given.\n");
+  printHelp();
+}
+
+print("\nChecking out branch $branch where it exists\n\n");
+
+my $failures = Thread::Queue->new();
+
+my $fail = GitModules::runCmd(\&checkOutBranch, $j, $debugMode);
+
+sub checkOutBranch {
+  my $dir = $_[0];
+  if(!chdir($dir)) {
+    my $err = "\nERROR: could not chdir to $dir.\n";
+    print("$err");
+    $failures->enqueue($err);
+    return(2);
+  }
+  my $currentBranch = qx/cd $dir; git symbolic-ref --short HEAD/;
+  if($?) {
+    my $err = "ERROR: git symbolic-ref failed in $dir\n";
+    print($err);
+    $failures->enqueue($err);
+    return(1);
+  }
+  chomp($currentBranch);
+  if($currentBranch eq $branch) {
+    print("$dir is already on $branch. skipping...\n\n");
+    return(0);
+  }
+  print("Fetching all remote branches for $dir\n");
+  my $cmd = "cd $dir; newGitFetch";
+  if(system($cmd)) {
+    my $err = "\nERROR: could not fetch from $dir\n";
+    print("$err");
+    $failures->enqueue($err);
+    return(1);
+  }
+  $cmd = "cd $dir; git branch -r";
+  my $output = qx/$cmd/;
+  chomp($output);
+  if($debugMode) {
+    print("\ngrep output: $output\n\n");
+  }
+  if(!($output =~ /origin\/${branch}$/m)) {
+    print("\n$dir does not have remote branch $branch.");
+    if($output =~ /origin\/${branch}$/mi) {
+      print("\nBUT does have a branch with different case.");
+    }
+    print("... skipping\n\n");
+    return(0);
+  } elsif($debugMode) {
+    print("found $branch\n");
+  }
+  print("$dir is currently on $currentBranch, checking out $branch\n");
+  my $forceCmd = " ";
+  if($force) {
+    $forceCmd = " --force ";
+  }
+  $cmd = "cd $dir; git checkout $forceCmd -B $branch origin/$branch";
+  if(system($cmd)) {
+    my $err = "\nERROR: could not checkout $branch in $dir\n\n";
+    print("$err");
+    $failures->enqueue($err);
+    return(1);
+  }
+  print("$dir successfully checked out $branch\n\n");
+  return(0);
+}
+
+if(!$fail) {
+  print("\n\nSuccess\n\n");
+  exit(0);
+}
+print("\n\nFAILED\n\n");
+my $errDone = "0";
+while(!$errDone) {
+  if(defined(my $err = $failures->dequeue_nb())) {
+    print("\n$err\n");
+  } else {
+    $errDone = "1";
+  }
+}
+exit(1);

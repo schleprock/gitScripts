@@ -1,0 +1,23 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+my $help;
+
+GetOptions("help|?" => \$help
+    ) or printHelp();
+
+printHelp() if($help);
+
+sub printHelp
+{
+  print("\nmvConanLibsToTemp [-help|?]\n");
+  exit 1;
+}
+
+my $conanLibs = qx!find . -maxdepth 3 -name "conaninfo.txt" | sed -e 's/1.conaninfo.txt//'!;
+print("Found following conanlibs: \n${conanLibs}\n");

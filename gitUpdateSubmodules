@@ -1,0 +1,244 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use threads;
+use Thread::Queue;
+use Time::HiRes qw(sleep);
+
+my @errors;
+# create a shared queue
+my $queue = Thread::Queue->new();
+my $endOfQueueMarker = "ENDOFQUEUEMARKER";
+my $pwd = getcwd();
+
+my $pull;
+my $all;
+my $noXmessage;
+my $timeoutTimeSeconds;
+my $j;
+my $help;
+
+GetOptions("noxmessage" => \$noXmessage,
+           "j:i" => \$j,
+           "timeoutTimeSeconds:i" => \$timeoutTimeSeconds,
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+my $startTime = time();
+
+if(!defined($timeoutTimeSeconds)) {
+  $timeoutTimeSeconds = 0;
+}
+
+my $to = $timeoutTimeSeconds;
+if($to == 0) {
+  $to = "infinite";
+}
+print("\nTimeout set to $to\n\n");
+
+my $gitCmd = "git submodule update --init -f --recursive";
+
+if(! -e ".gitmodules") {
+  print("\nERROR: no .gitmodules file found, no submodules.\n\n");
+  exit(1);
+}
+
+print("\nRunning submodule init\n");
+
+my $cmd = "git submodule init 2>&1";
+#my $cmd = "echo foo";
+my @gitRet = qx/$cmd/;
+#print("$cmd return: $?\n");
+chomp(@gitRet);
+foreach my $line(@gitRet) {
+  if($line !~ m/igncr/) {
+    print("$line\n");
+  }
+}
+if($?) {
+  print("\n\nERROR: $cmd failed\n\n");
+  exit(3);
+} else {
+  print("\nInit complete\n\n");
+}
+
+
+sub printHelp
+{
+  print("\ngitUpdateSubmodules [-j <n> ] [-help|?]\n");
+  print("\t-j: perform parallel update, without j use all cpu's\n");
+  print("\ttimeoutTimeSeconds: amount of time in seconds when it will give up\n");
+  print("\t\tif 0 then no timeout\n");
+  print("\t--noxmessage: suppresses xmessage notification\n\n");
+  exit 1;
+}
+
+sub update
+{
+  my $error = "0";
+  my $done = "0";
+  while(!$done) {
+    my $dir = $queue->dequeue();
+    #print("dir = $dir\n");
+    if(defined($dir) && ($dir ne $endOfQueueMarker)) {
+      if(! -d ($dir)) {
+        print("ERROR: $dir does not exist\n");
+        push(@errors, "ERROR: $dir does not exist");
+        ++$error;
+      }
+      print("\nRunning $gitCmd $dir:\n");
+      my $cmd = "$gitCmd $dir 2>&1";
+      print("running cmd: $cmd\n");
+      my @gitRet = qx/$cmd/;
+      #print("$cmd return: $?\n");
+      chomp(@gitRet);
+      foreach my $line(@gitRet) {
+        if($line !~ m/igncr/) {
+          print("$line\n");
+        }
+      }
+      if($?) {
+        print("\n\nERROR: $cmd failed\n\n");
+        push(@errors, "ERROR: $cmd failed, in $dir");
+        ++$error;
+      } else {
+        print("\nUpdate of $dir, complete\n");
+      }
+    } else {
+      return $error;
+    }
+  }
+}
+
+sub myPrint {
+  my $done = "0";
+  while(!$done) {
+    my $count = $queue->dequeue();
+    if((defined($count)) && ($count != "-1")) {
+      my $cmd = "xterm -e \"echo crap $count; sleep 3\"";
+      system($cmd);
+    }
+    if($count == "-1") {
+      $done = "1";
+    }
+  }
+  return 0;
+}
+
+# figure out how many processors
+my $numProc = $ENV{NUMBER_OF_PROCESSORS};
+if(defined($j) && ($j != 0)) {
+  $numProc = $j;
+} else {
+  if(defined($numProc)) {
+    print("$numProc processors detected\n");
+    $numProc = $numProc * 2;
+  } else {
+    print("cannot determine numb of processors, using 4\n");
+    $numProc = "4";
+  }
+}
+
+# find all submodules
+my $numSubmodules = "0";
+my $file = ".gitmodules";
+open my $fh, $file or die "no file $file";
+my @gitmoduleFile = <$fh>;
+chomp(@gitmoduleFile);
+my @submodules = grep(/path =/, @gitmoduleFile);
+foreach my $line(@submodules) {
+  my @submoduleline = split(' ', $line);
+  my $submodule = @submoduleline[2];
+  print("found $submodule\n");
+  if(-d $submodule) {
+    $queue->enqueue($submodule);
+    ++$numSubmodules;
+  }
+}
+print("numSubmodules = $numSubmodules\n");
+if($numSubmodules eq "0") {
+  print("No submodules found in $pwd\n\n");
+  exit 2;
+}
+
+for(my $count = 0; $count < $numSubmodules; ++$count) {
+  $queue->enqueue($endOfQueueMarker);
+}
+
+# create a thread per cpu up to numProc or numb of repos
+my @myThreads;
+for(my $count = "0"; (($count < $numProc) &&
+                      ($count < $numSubmodules)); ++$count) {
+  print("Creating queue $count\n");
+  $myThreads[$count] = threads->new(\&update);
+  sleep(0.2);
+}
+
+# wait for threads to finish
+$| = 1;
+my $fail = "0";
+my $done = "0";
+while(!$done) {
+  my $currentTime = time();
+  my $deltaTime = $currentTime - $startTime;
+  if(($timeoutTimeSeconds > 0) && ($deltaTime > $timeoutTimeSeconds)) {
+    print("\nERROR: submodule update timed out at $deltaTime seconds\n\n");
+    # detach all threads so we can terminate
+    for(my $count = 0; (($count < $numProc) && 
+                        ($count < $numSubmodules)); ++$count) {
+      $myThreads[$count]->detach();
+    }
+    $fail = "1";
+    $done = "1";
+  } else {
+    my $numSubmodulesLeft = "0";
+    $done = "1";
+    sleep(2.0);
+    for(my $count = 0; (($count < $numProc) && 
+                        ($count < $numSubmodules)); ++$count) {
+      if(!$myThreads[$count]->is_joinable()) {
+        ++$numSubmodulesLeft;
+        $done = "0";
+      }
+    }
+    print("$numSubmodulesLeft ");
+  }
+}
+# reap all the myThreads if we haven't timed out (failed)
+if(!$fail) {
+  for(my $count = 0; (($count < $numProc) && 
+                      ($count < $numSubmodules)); ++$count) {
+    my $ret = $myThreads[$count]->join();
+    if($ret) {
+      print("\n\nERROR: submodule update failed\n\n");
+      $fail = "1";
+    }
+  }
+}
+if(!$noXmessage && (-f "/usr/bin/xmessage")) {
+  my $output;
+  if(!$fail) {
+    $output = "SUCCESS: ";
+  } else {
+    $output = "FAILED: ";
+  }
+  my $cmd = "xmessage -center \"${output}git submodule update in $pwd\"";
+  system($cmd);
+}
+if(!$fail) {
+  print("\n\nSubmodule update completed successfully\n\n");
+  exit 0;
+} else {
+  foreach my $err(@errors)
+  {
+    print("$err\n");
+  }
+  print("\n\nSubmodule update FAILED\n\n");
+  exit 1;
+}

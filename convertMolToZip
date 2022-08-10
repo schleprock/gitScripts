@@ -1,0 +1,26 @@
+#! /usr/bin/env perl
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+my @molFiles = qx/ls -1 *.mol/;
+chomp(@molFiles);
+my $error = 0;
+foreach my $file(@molFiles) {
+  my $zipFile = $file;
+  $zipFile =~ s/mol$/zip/;
+  my $cmd = "mv $file $zipFile";
+  print("Converting $file to $zipFile\n");
+  if(system($cmd)) {
+    print("\nERROR: cmd: $cmd FAILED\n");
+    ++$error;
+  }
+}
+if($error) {
+  print("\nFAILED: convert failed\n");
+} else {
+  print("\nSuccess\n");
+}
+    

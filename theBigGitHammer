@@ -1,0 +1,90 @@
+#! /usr/bin/env perl                                                            
+
+use strict;
+
+use GitModules;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+use threads;
+use Thread::Queue;
+
+my $scriptName = basename($0);
+my $j;
+my $help;
+my $debugMode;
+
+GetOptions("j:i" => \$j, #run commands in parallel
+           "debugMode" => \$debugMode,
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+print("\n");
+
+sub printHelp {
+  print("\nThis script will delete all the HEAD refs from any repo's it ");
+  print("can find. it will\nthen run git gc, then git fetch.\n");
+  print("So when this is finished all repo's will be up to date with ");
+  print("origin (though\nthe branch will not be merged up).\n");
+  print("\n$scriptName [--j [numb]][--help|?]\n");
+  print("\t--j [numb]: run commands in parallel\n");
+  print("\t--debugMode: turn on debugMode (off by default)\n");
+  print("\n\n");
+  exit;
+}
+
+my $failures = Thread::Queue->new();
+
+sub run {
+  my $here = $_[0];
+  if(!chdir($here)) {
+    failed("cannot chdir to $here");
+    return(1);
+  }
+  print("\nRunning $scriptName in $here\n");
+  my $command = "cd $here; deleteGitRefs";
+  if(system($command)) {
+    failed("$command failed in $here");
+    return(1);
+  }
+  $command = "cd $here; git gc";
+  if(system($command)) {
+    failed("$command failed in $here");
+    return(1);
+  }
+  $command = "cd $here; newGitFetch";
+  if(system($command)) {
+    failed("$command failed in $here");
+    return(2);
+  }
+  return(0);
+}
+
+sub failed {
+  my $err = $_[0];
+  print("\nERROR: $err\n");
+  $failures->enqueue($err);
+  return(1);
+}
+
+my $fail = GitModules::runCmd(\&run, $j, $debugMode);
+
+if(!$fail) {
+  print("\n$scriptName completed successfully\n\n");
+  exit(0);
+}
+print("\nERROR: $scriptName FAILED\n\n");
+my $errDone = "0";
+while(!$errDone) {
+  if(defined(my $err = $failures->dequeue_nb())) {
+    print("\n$err\n");
+  } else {
+    $errDone = "1";
+  }
+}
+exit(1);
+

@@ -1,0 +1,66 @@
+#! /usr/bin/env perl
+
+use strict;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+
+my $sourceRepoDir;
+my $destRepoDir;
+my $repo;
+my $parallel;
+my $help;
+
+GetOptions("sourceRepoDir=s" => \$sourceRepoDir, #source repo, pittstash
+           "destRepoDir=s" => \$destRepoDir, #directory to clone into
+           "repo=s" => \$repo, #specific repo(s) to clone optional
+           "parallel:i" => \$parallel, #run commands in parallel
+           "help|?" => \$help,
+    ) or printHelp();
+
+if($help) {
+  printHelp();
+  exit 1;
+}
+
+if(!$sourceRepoDir) {
+  print("ERROR: must include -s (--sourceRepoDir)\n");
+  printHelp()
+}
+
+my $dest = "";
+my $repoOpt = "";
+my $parallelOpt = "";
+
+if($destRepoDir) {
+  $dest = "--destRepoDir $destRepoDir";
+}
+if($repo) {
+  $repoOpt = "--repo $repo";
+}
+if($parallel) {
+  $parallelOpt = "--parallel $parallelOpt";
+}
+my $cmd = "cloneTFS --origin --localSourceRepo --sourceRepoDir $sourceRepoDir $dest $repoOpt $parallelOpt";
+print("Running cmd: $cmd\n\n");
+if(system($cmd)) {
+  print("ERROR: cloneLocalRepo failed\n");
+  exit 1;
+}
+print("\nCloning complete. Running update due to changing remote\n\n");
+$cmd = "gitUpdate --no3rdparty --nox";
+if(system($cmd)) {
+  print("ERROR: git update failed\n");
+  exit 5;
+}
+exit 0;
+
+sub printHelp
+{
+  print"cloneLocalRepo --sourceRepoDir <dir> [--destRepoDir <dir>] [--repo <repo>] [--useHardLinks] [--parallel <numbThreads] [--help|?]\n";
+  print"\t--repo: comma seperated list of repo's to clone\n";
+  print("\nINFO: local repo directory is just path to the repo\n\n");
+  exit;
+}
+

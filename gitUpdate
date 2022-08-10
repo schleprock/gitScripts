@@ -59,10 +59,11 @@ if(chdir(".git")) {
   printAndExit();
 }
 
+my $thirdPartyScript = "$ENV{HOME}/TwinBuilder_Dev_ModelicaScripts/3rdpartyArtifactory";
 if($no3rdparty) {
   print("\nINFO: skipping update of 3rdparty repo\n");
-} else {
-  my $cmd = "~/gitScripts/3rdpartyArtifactory";
+} elsif(-x $thirdPartyScript) {
+  my $cmd = $thirdPartyScript;
   my $res = system($cmd);
   print("\n$cmd returned $res\n");
   if($res)
@@ -71,6 +72,8 @@ if($no3rdparty) {
     $fail = 1;
     printAndExit();
   }
+} else {
+  print("\nCould not find 3rdparty script, skipping\n");
 }
 $output = "$scriptName SUCCEEDED in $pwd";
 printAndExit();

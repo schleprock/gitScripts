@@ -1,0 +1,34 @@
+#! /usr/bin/env perl
+
+use strict;
+use Cwd;
+use Cwd 'chdir';
+
+my $cmd = "rm -rf ebu_conanPathFiles";
+if(system($cmd)) {
+  print("\nWARNING: unable to delete ebu_conanPathFiles\n");
+} else {
+  print("\nINFO: deleted ebu_conanPathFiles\n");
+}
+my $thirdParty = "3rdparty";
+if(!chdir("$thirdParty")) {
+  print("\nERROR: cannot cd to $thirdParty\n\nUNSUCCESSFUL...EXITING\n\n");
+  exit 1;
+}
+print("\nINFO: deleting conan libs...\n");
+$cmd = "find . -maxdepth 3 -name \"conaninfo.txt\" | sed -e '\''s/1.conaninfo.txt//'\'' | xargs rm -r";
+if(system($cmd)) {
+  print("\nERROR: unable to find and delete conan libraries\n");
+} else {
+  print("\nSUCCESS: deleted conan libs\n");
+}
+print("\nINFO: deleting .conan...\n");
+my $dotConan = ".conan";
+$cmd = "rm -rf $dotConan";
+if(system($cmd)) {
+  print("\nERROR: failed to delete .conan\n");
+  exit 2;
+}
+print("\nSUCCESS: deleted .conan\n");
+print("\nSUCCESS: successfully deleted all conan crap!!\n\n");
+exit 0;

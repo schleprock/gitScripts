@@ -45,7 +45,7 @@ my $jSw = " ";
 if($j) {
   $jSw = "-j $j";
 }
-my $command = "~/gitScripts/newGitFetch --pull -r 2 $jSw";
+my $command = "~/gitScripts/gitFetch --pull -r 2 $jSw";
 print("Running $command\n");
 if(system($command)) {
   $output = "$command failed";

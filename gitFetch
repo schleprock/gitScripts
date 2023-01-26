@@ -1,1 +1,95 @@
-newGitFetch
+#! /usr/bin/env perl
+
+use strict;
+
+use GitModules;
+
+use Getopt::Long;
+use Cwd;
+use Cwd 'chdir';
+use File::Basename;
+use threads;
+use Thread::Queue;
+
+my $scriptName = basename($0);
+
+my $retries = 5;
+my $j;
+my $pull;
+my $help;
+my $debugMode;
+
+GetOptions("r:i" => \$retries, 
+           "j:i" => \$j, #run commands in parallel
+           "pull" => \$pull,
+           "debugMode" => \$debugMode, 
+           "help|?" => \$help,
+    ) or printHelp();
+
+printHelp() if($help);
+
+sub printHelp {
+  print("\n$scriptName [-j [numb]][-r [numb]] [--help|?]\n");
+  print("\t-j [numb]: run commands in parallel\n");
+  print("\t-r [numb]: number of retries, default is $retries\n");
+  print("\t--pull: do a pull instad of a fetch (ie merge)\n");
+  print("\t--debugMode: turn on debugMode (off by default)\n");
+  print("\n\n");
+  exit;
+}
+
+my $failures = Thread::Queue->new();
+
+my $gitCommand = "-r $retries";
+if($pull) {
+  $gitCommand = "$gitCommand --pull";
+}
+
+sub run {
+  my $here = $_[0];
+  if(!chdir($here)) {
+    my $err = "\nERROR: cannot chdir to $here\n\n";
+    print($err);
+    $failures->enqueue($err);
+    return(1);
+  }
+  my $gitCommand = "fetch";
+  if($pull) {
+    $gitCommand = "pull";
+  }
+  my $command = "git $gitCommand --progress";
+  my $count = 0;
+  while($count  < $retries) {
+    print("Running $command in $here, count = $count\n");
+    if(system($command)) {
+      print("\n$scriptName failed in $here, count = $count\n");
+      ++$count;
+      if($count >= $retries) {
+        my $err = "\n$scriptName failed all retries in $here, count = ";
+        $err = "$err $count\n";
+        print($err);
+        failures->enqueue($err);
+        return(2);
+      }
+    }
+    print("\n$scriptName passed in $here, count = $count\n");
+    return(0);
+  }
+}
+
+my $fail = GitModules::runCmd(\&run, $j, $debugMode);
+if(!$fail) {
+  print("\n$scriptName completed successfully\n\n");
+  exit(0);
+}
+print("\nERROR: $scriptName FAILED\n\n");
+
+my $errDone = "0";
+while(!$errDone) {
+  if(defined(my $err = $failures->dequeue_nb())) {
+    print("\n$err\n");
+  } else {
+    $errDone = "1";
+  }
+}
+exit(1);

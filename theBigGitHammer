@@ -56,7 +56,7 @@ sub run {
     failed("$command failed in $here");
     return(1);
   }
-  $command = "cd $here; newGitFetch";
+  $command = "cd $here; gitFetch";
   if(system($command)) {
     failed("$command failed in $here");
     return(2);

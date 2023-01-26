@@ -5,14 +5,13 @@ use Getopt::Long;
 use Cwd;
 use Cwd 'chdir';
 
-my @molFiles = qx/ls -1 *.mol/;
-chomp(@molFiles);
+my @libs = qx/ls -1/;
+chomp(@libs);
 my $error = 0;
-foreach my $file(@molFiles) {
-  my $zipFile = $file;
-  $zipFile =~ s/mol$/zip/;
-  my $cmd = "mv $file $zipFile";
-  print("Converting $file to $zipFile\n");
+foreach my $file(@libs) {
+  my @tokens = split(/ /, $file);
+  my $cmd = "mv \"$file\" $tokens[0]";
+  print("Exec'ing $cmd\n");
   if(system($cmd)) {
     print("\nERROR: cmd: $cmd FAILED\n");
     ++$error;

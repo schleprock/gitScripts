@@ -37,7 +37,7 @@ sub printHelp
   exit 1;
 }
 
-my $command = "~/gitScripts/gitClean.pl";
+my $command = "~/gitScripts/gitClean";
 print("Running $command\n");
 if(system($command)) {
   print("$command failed\n");
@@ -57,8 +57,6 @@ if(-d "3rdparty") {
 } else {
   print("3rdparty already deleted\n");
 }
-# need to limit the parallel stuff as the network doesn't even reach
-# the level of crap. same goes for the POS TFS servers....
 print("Running update\n");
 my $no3rdSW = " ";
 if($no3rdparty) {

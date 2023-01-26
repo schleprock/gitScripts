@@ -75,7 +75,7 @@ sub checkOutBranch {
     return(0);
   }
   print("Fetching all remote branches for $dir\n");
-  my $cmd = "cd $dir; newGitFetch";
+  my $cmd = "cd $dir; gitFetch";
   if(system($cmd)) {
     my $err = "\nERROR: could not fetch from $dir\n";
     print("$err");

@@ -6,6 +6,7 @@ use Cwd 'chdir';
 use threads;
 use Thread::Queue;
 use File::Basename;
+use Time::HiRes qw(usleep);
 
 my $endOfQueueMarker = "ENDOFQUEUEMARKER";
 
@@ -165,6 +166,7 @@ sub runCmd {
         new(sub{runThread(sub{return($queue->dequeue())},
                           $subroutineToRun,
                           $pwd)});
+    usleep(20);
   }
 
   # wait for threads to finish

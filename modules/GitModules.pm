@@ -166,7 +166,7 @@ sub runCmd {
         new(sub{runThread(sub{return($queue->dequeue())},
                           $subroutineToRun,
                           $pwd)});
-    usleep(20);
+    usleep(100);
   }
 
   # wait for threads to finish

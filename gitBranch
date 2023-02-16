@@ -38,7 +38,7 @@ sub run {
     return(1);
   }
   my $repo = GitModules::gitRepoName($here);
-  my $command = "cd $here; git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \\(.*\\)/\\1/'";
+  my $command = "cd $here; git branch --show-current";
   if($debugMode) {
     print("\nRunning: $command here: $here:\n");
   }
@@ -48,12 +48,12 @@ sub run {
     return(1);
   }
   chomp($branch);
-  if(($branch ne "develop") && ($branch ne "master")) {
+  if(($branch ne "develop") && ($branch ne "main")) {
     print color 'bold blue';
   }
   print("$repo: ");
   print color 'reset';
-  if(($branch ne "develop" && ($branch ne "master"))) {
+  if(($branch ne "develop" && ($branch ne "main"))) {
     print color 'bold red';
   }
   print("$branch\n");

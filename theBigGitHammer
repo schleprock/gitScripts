@@ -46,17 +46,17 @@ sub run {
     return(1);
   }
   print("\nRunning $scriptName in $here\n");
-  my $command = "cd $here; deleteGitRefs";
+  my $command = "cd $here && deleteGitRefs";
   if(system($command)) {
     failed("$command failed in $here");
     return(1);
   }
-  $command = "cd $here; git gc";
+  $command = "cd $here && git gc";
   if(system($command)) {
     failed("$command failed in $here");
     return(1);
   }
-  $command = "cd $here; gitFetch";
+  $command = "cd $here && gitFetch";
   if(system($command)) {
     failed("$command failed in $here");
     return(2);

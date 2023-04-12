@@ -13,11 +13,13 @@ my $scriptName = basename($0);
 my $noxmessage;
 my $j;
 my $no3rdparty;
+my $debug;
 my $help;
 
 GetOptions("noxmessage" => \$noxmessage,
            "j:i" => \$j,
            "no3rdparty" => \$no3rdparty,
+           "debug" => \$debug,
            "help|?" => \$help,
     ) or printHelp();
 
@@ -33,6 +35,7 @@ sub printHelp
   print("\t--noxmessage: suppress xmessage\n");
   print("\t-j <int>: set parallel limit, default is all cpu's\n");
   print("\t--no3rdparty: do not update 3rdparty\n");
+  print("\t--debug: turn on debug mode\n");
   print("\t--help: print help\n");
   exit 1;
 }
@@ -45,7 +48,12 @@ my $jSw = " ";
 if($j) {
   $jSw = "-j $j";
 }
-my $command = "~/gitScripts/gitFetch --pull -r 2 $jSw";
+my $debugMode = "";
+if(defined($debug))
+{
+  $debugMode = "--debug";
+}
+my $command = "~/gitScripts/gitFetch --pull -r 2 $jSw $debugMode";
 print("Running $command\n");
 if(system($command)) {
   $output = "$command failed";

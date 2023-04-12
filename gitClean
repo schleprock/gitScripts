@@ -34,7 +34,7 @@ my $pwd = getcwd;
 sub clean {
   my $here = $_[0];
   print("\nCleaning $here:\n");
-  my $cmd = "cd $here; git clean -fxd -f";
+  my $cmd = "cd $here && git clean -fxd -f";
   if(system($cmd)) {
     print("\n\nERROR: git clean failed in $here\n\n");
     $errors->enqueue("ERROR: git clean failed in $here");

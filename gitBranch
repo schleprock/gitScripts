@@ -38,7 +38,7 @@ sub run {
     return(1);
   }
   my $repo = GitModules::gitRepoName($here);
-  my $command = "cd $here; git branch --show-current";
+  my $command = "cd $here && git branch --show-current";
   if($debugMode) {
     print("\nRunning: $command here: $here:\n");
   }

@@ -90,7 +90,7 @@ sub runThread {
   my $error = "0";
   my $done = "0";
   while(!$done) {
-    my $dir = $dequeue->();
+    my $dir = $dequeue->dequeue();
     if($debugMode) {
       print("dir = $dir\n");
     }
@@ -163,13 +163,15 @@ sub runCmd {
       print("Creating queue $count\n");
     }
     $myThreads[$count] = threads->
-        new(sub{runThread(sub{return($queue->dequeue())},
-                          $subroutineToRun,
-                          $pwd)});
-    usleep(500000);
+        new(\&runThread, $queue, $subroutineToRun,
+            $pwd, $debugMode);
+    usleep(1000);
   }
 
   # wait for threads to finish
+  if($debugMode) {
+    print("Wating for threads to finish");
+  }
   $| = 1;
   my $done = "0";
   while(!$done) {
@@ -212,7 +214,7 @@ sub gitRepoName
     return;
   }
   # retrieve repo name
-  my $basePath = qx!cd $here; git rev-parse --show-toplevel 2>/dev/null!;
+  my $basePath = qx!cd $here && git rev-parse --show-toplevel 2>/dev/null!;
   chomp($basePath);
   if(! length $basePath) {
     return;

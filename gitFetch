@@ -57,7 +57,7 @@ sub run {
   if($pull) {
     $gitCommand = "pull";
   }
-  my $command = "git $gitCommand --progress";
+  my $command = "cd $here && git $gitCommand --progress";
   my $count = 0;
   while($count  < $retries) {
     print("Running $command in $here, count = $count\n");

@@ -58,7 +58,7 @@ sub update
         return 1;
       }
       print("\nRunning git $gitCmd $here:\n");
-      $cmd = "cd $here; git $gitCmd 2>&1";
+      $cmd = "cd $here && git $gitCmd 2>&1";
       my @gitRet = qx/$cmd/;
       #print("$cmd return: $?\n");
       chomp(@gitRet);

@@ -75,7 +75,7 @@ sub checkOutBranch {
     return(0);
   }
   print("Fetching all remote branches for $dir\n");
-  my $cmd = "cd $dir; gitFetch";
+  my $cmd = "cd $dir && gitFetch";
   if(system($cmd)) {
     my $err = "\nERROR: could not fetch from $dir\n";
     print("$err");
@@ -103,7 +103,7 @@ sub checkOutBranch {
   if($force) {
     $forceCmd = " --force ";
   }
-  $cmd = "cd $dir; git checkout $forceCmd -B $branch origin/$branch";
+  $cmd = "cd $dir && git checkout $forceCmd -B $branch origin/$branch";
   if(system($cmd)) {
     my $err = "\nERROR: could not checkout $branch in $dir\n\n";
     print("$err");

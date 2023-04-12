@@ -48,7 +48,7 @@ sub runCmd {
     return(1);
   }
   print("\nRunning: $command here: $here:\n");
-  if(system("cd $here; $command")) {
+  if(system("cd $here && $command")) {
     my $err = "\nERROR: $command failed in $here\n";
     print("$err");
     $failures->enqueue($err);

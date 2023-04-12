@@ -52,7 +52,7 @@ print("running $statusCmd\n\n");
 sub getStatus {
   my $here = $_[0];
   print("getting status for $here:\n");
-  my $cmd = "cd $here; $statusCmd";
+  my $cmd = "cd $here && $statusCmd";
   my $output = qx/$statusCmd/;
   if($?) {
     print("\n\nERROR: gitStatus failed in $here\n\n");

@@ -41,25 +41,35 @@ sub findAllRepos {
   # the first parameter will be the function used to push a repo dir onto
   # a list, or queue or whatever of repo's.
   my $addRepoFunc = $_[0];
-  my $pwd = $_[1];
+  my $repoBaseDir = $_[1];
   my $debugMode = $_[2];
   if(! defined $_[2]) {
     print("\nERROR: not enough parameters to findAllRepos, needs to be 3\n");
     exit 9;
   }
+  if($debugMode) {
+    my $lwd = getcwd();
+    print("\ncwd = $lwd\n");
+  }
   my $numRepos = 0;
   if(chdir(".git")) {
-    chdir($pwd);
+    chdir($repoBaseDir);
     $addRepoFunc->(".");
     ++$numRepos;
   } else {
     my @ls = qx/ls -1/;
+    if($debugMode) {
+      print("\nDirectories found:\n");
+      foreach(@ls) {
+        print("\t$_");
+      }
+    }
     chomp(@ls);
     foreach my $dir(@ls) {
       if(chdir("${dir}/.git")) {
         $addRepoFunc->($dir);
         ++$numRepos;
-        chdir($pwd);
+        chdir($repoBaseDir);
       }
     }
   }
@@ -67,7 +77,7 @@ sub findAllRepos {
     print("numRepos = $numRepos\n");
   }
   if($numRepos eq "0") {
-    print("No repositories found in $pwd\n\n");
+    print("No repositories found in $repoBaseDir\n\n");
     exit 2;
   }
   return($numRepos);

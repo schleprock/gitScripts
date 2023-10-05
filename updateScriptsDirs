@@ -1,0 +1,49 @@
+#! /usr/bin/env perl
+
+use strict;
+use Cwd;
+use Cwd 'chdir';
+use Getopt::Long;
+use File::Basename;
+
+my $scriptName = basename($0);
+
+my $help;
+
+GetOptions("help|?" => \$help
+    ) or printHelp();
+
+if($help) {
+  printHelp();
+}
+
+sub printHelp
+{
+  print("\n$scriptName [--help|?]\n\n");
+  print("\tUpdates all script directories that exist on this machine\n\n");
+  exit 1;
+}
+
+my $pwd = cwd();
+my @listOfDirs = ("$ENV{HOME}/scripts",
+                  "$ENV{HOME}/gitScripts",
+                  "$ENV{HOME}/TwinBuilder_Dev_ModelicaScripts");
+foreach my $scriptsDir(@listOfDirs) {
+  if(-d $scriptsDir) {
+    if(!chdir($scriptsDir)) {
+      my $currDir = cwd();
+      print("ERROR: could not cd to $scriptsDir, current dir: $currDir\n\n");
+      exit 2;
+    }
+    my $cmd = "gitUpdate --nox";
+    if(system($cmd)) {
+      my $currDir = cwd();
+      print("ERROR: could not update $currDir\n\n");
+      exit 3;
+    }
+    print("Successfully updated $scriptsDir\n\n");
+  } else {
+    print("\nINFO: $scriptsDir does not exist.\n");
+  }
+}
+print("\n\nDONE\n\n");

@@ -35,7 +35,7 @@ foreach my $scriptsDir(@listOfDirs) {
       print("ERROR: could not cd to $scriptsDir, current dir: $currDir\n\n");
       exit 2;
     }
-    my $cmd = "gitUpdate --nox";
+    my $cmd = "~/gitScripts/gitUpdate --nox";
     if(system($cmd)) {
       my $currDir = cwd();
       print("ERROR: could not update $currDir\n\n");

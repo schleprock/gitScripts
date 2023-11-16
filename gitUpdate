@@ -12,12 +12,14 @@ my $scriptName = basename($0);
 
 my $noxmessage;
 my $j;
+my $full;
 my $no3rdparty;
 my $debug;
 my $help;
 
 GetOptions("noxmessage" => \$noxmessage,
            "j:i" => \$j,
+           "full" => \$full,
            "no3rdparty" => \$no3rdparty,
            "debug" => \$debug,
            "help|?" => \$help,
@@ -34,6 +36,7 @@ sub printHelp
   print("Update a set of repo's or just a single repo.\n");
   print("\t--noxmessage: suppress xmessage\n");
   print("\t-j <int>: set parallel limit, default is all cpu's\n");
+  print("\t--full: do a full 3rdparty update instead of just modelica\n");
   print("\t--no3rdparty: do not update 3rdparty\n");
   print("\t--debug: turn on debug mode\n");
   print("\t--help: print help\n");
@@ -72,6 +75,10 @@ if($no3rdparty) {
   print("\nINFO: skipping update of 3rdparty repo\n");
 } elsif(-x $thirdPartyScript) {
   my $cmd = $thirdPartyScript;
+  if($full) {
+    $cmd = "$cmd --full";
+    print("INFO: doing full 3rdparty update\n");
+  }
   my $res = system($cmd);
   print("\n$cmd returned $res\n");
   if($res)

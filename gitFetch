@@ -56,6 +56,15 @@ sub run {
   my $gitCommand = "fetch";
   if($pull) {
     $gitCommand = "pull";
+    # if we're doing a pull, check for uncommited changes and fail if there are
+    # changes
+    my $testCmd = "cd $here && testForUncommitedChanges";
+    if(system($testCmd)) {
+      my $err = "\n$scriptName failed due to uncommited changes here: $here\n";
+      print("$err");
+      $failures->enqueue($err);
+      return(33);
+    }
   }
   my $command = "cd $here && git $gitCommand --progress";
   my $count = 0;
@@ -68,7 +77,7 @@ sub run {
         my $err = "\n$scriptName failed all retries in $here, count = ";
         $err = "$err $count\n";
         print($err);
-        failures->enqueue($err);
+        $failures->enqueue($err);
         return(2);
       }
     }

@@ -1,0 +1,9 @@
+#! /usr/bin/env bash
+
+ if [[ -z $(git status -s) ]]; then
+  echo "tree is clean"
+  exit 0
+else
+  echo "tree is dirty"
+  exit 3
+fi

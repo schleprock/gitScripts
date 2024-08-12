@@ -58,7 +58,7 @@ sub run {
     $gitCommand = "pull";
     # if we're doing a pull, check for uncommited changes and fail if there are
     # changes
-    my $testCmd = "cd $here && testForUncommitedChanges";
+    my $testCmd = "cd $here && ~/gitScripts/testForUncommitedChanges";
     if(system($testCmd)) {
       my $err = "\n$scriptName failed due to uncommited changes here: $here\n";
       print("$err");

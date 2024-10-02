@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
- if [[ -z $(git status -s) ]]; then
+ if [[ -z $(git status -uno -s) ]]; then
   echo "tree is clean"
   exit 0
 else

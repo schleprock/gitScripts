@@ -17,6 +17,7 @@ my $force;
 my $noXmessage = 0;
 my $debugMode;
 my $help;
+my $scriptName = basename($0);
 
 GetOptions("branch=s" => \$branch,
            "j:i" => \$j, #run commands in parallel
@@ -30,12 +31,11 @@ printHelp() if($help);
 
 sub printHelp
 {
-  print("\ncheckOutRemoteBranch [-help|?] [-j num] --branch <name> ");
+  print("\n$scriptName [-help|?] [-j num] --branch <name> ");
   print("[--force]\n");
   print("\n\tThis script will checkout the remote branch with \"");
   print("branch name\" \n\tif it exists in any of the repos.\n");
-  print("\tIf the remote branch does not exist in the repo, the script ");
-  print("will\n\tcheckout develop. NOTE: this script does NOT update ");
+  print("\tNOTE: this script does NOT update ");
   print("the repo but does\n\tdo a fetch\n\n");
   print("\t--force: force a reset to new branch\n");
   exit 1;
@@ -49,7 +49,7 @@ if(!$branch) {
 }
 
 print("\nChecking out branch $branch where it exists\n\n");
-
+my $pwd = cwd();
 my $failures = Thread::Queue->new();
 
 my $fail = GitModules::runCmd(\&checkOutBranch, $j, $debugMode);
@@ -115,6 +115,7 @@ sub checkOutBranch {
 }
 
 if(!$fail) {
+  system("cd $pwd; gitBranch");
   print("\n\nSuccess\n\n");
   exit(0);
 }

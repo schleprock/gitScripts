@@ -14,6 +14,7 @@ my $help;
 my $noXmessage = 0;
 my $debugMode;
 my $help;
+my $scriptName = basename($0);
 
 GetOptions("branch=s" => \$branch,
            "j:i" => \$j, #run commands in parallel
@@ -26,7 +27,7 @@ printHelp() if($help);
 
 sub printHelp
 {
-  print("\ncreateNewBranch [-help|?] --branch <name>\n");
+  print("\n$scriptName [-help|?] --branch <name>\n");
   print("\n\tThis script will create a new branch, \"branch name\", push ");
   print("it to origin\n\tand ");
   print("set up tracking only if the branch does not already exist.\n\n");

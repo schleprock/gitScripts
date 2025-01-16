@@ -16,12 +16,14 @@ my $scriptName = basename($0);
 my $retries = 5;
 my $j;
 my $pull;
+my $ignoreUncommittedChanges;
 my $help;
 my $debugMode;
 
 GetOptions("r:i" => \$retries, 
            "j:i" => \$j, #run commands in parallel
            "pull" => \$pull,
+           "ignoreUncommittedChanges" => \$ignoreUncommittedChanges,
            "debugMode" => \$debugMode, 
            "help|?" => \$help,
     ) or printHelp();
@@ -32,6 +34,7 @@ sub printHelp {
   print("\n$scriptName [-j [numb]][-r [numb]] [--help|?]\n");
   print("\t-j [numb]: run commands in parallel\n");
   print("\t-r [numb]: number of retries, default is $retries\n");
+  print("\t--ignoreUncommittedChanges: ignore changes\n");
   print("\t--pull: do a pull instad of a fetch (ie merge)\n");
   print("\t--debugMode: turn on debugMode (off by default)\n");
   print("\n\n");
@@ -59,7 +62,7 @@ sub run {
     # if we're doing a pull, check for uncommited changes and fail if there are
     # changes
     my $testCmd = "cd $here && ~/gitScripts/testForUncommitedChanges";
-    if(system($testCmd)) {
+    if(!$ignoreUncommittedChanges && system($testCmd)) {
       my $err = "\n$scriptName failed due to uncommited changes here: $here\n";
       print("$err");
       $failures->enqueue($err);

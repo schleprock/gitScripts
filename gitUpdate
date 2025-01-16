@@ -12,6 +12,7 @@ my $scriptName = basename($0);
 
 my $noxmessage;
 my $j;
+my $ignoreUncommittedChanges;
 my $full;
 my $no3rdparty;
 my $debug;
@@ -19,6 +20,7 @@ my $help;
 
 GetOptions("noxmessage" => \$noxmessage,
            "j:i" => \$j,
+           "ignoreUncommittedChanges" => \$ignoreUncommittedChanges,
            "full" => \$full,
            "no3rdparty" => \$no3rdparty,
            "debug" => \$debug,
@@ -32,6 +34,7 @@ if($help) {
 sub printHelp
 {
   print("\n$scriptName [--noxmessage] [-j <int>] ");
+  print("[--ignoreUncommittedChanges] ");
   print("[--no3rdparty] [--help]\n\n");
   print("Update a set of repo's or just a single repo.\n");
   print("\t--noxmessage: suppress xmessage\n");
@@ -51,12 +54,16 @@ my $jSw = " ";
 if($j) {
   $jSw = "-j $j";
 }
+my $igChMode = "";
+if($ignoreUncommittedChanges) {
+  $igChMode = "--ignoreUncommittedChanges";
+}
 my $debugMode = "";
 if(defined($debug))
 {
   $debugMode = "--debug";
 }
-my $command = "~/gitScripts/gitFetch --pull -r 2 $jSw $debugMode";
+my $command = "~/gitScripts/gitFetch --pull -r 2 $jSw $debugMode $igChMode";
 print("Running $command\n");
 if(system($command)) {
   $output = "$command failed";

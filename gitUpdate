@@ -41,6 +41,7 @@ sub printHelp
   print("\t-j <int>: set parallel limit, default is all cpu's\n");
   print("\t--full: do a full 3rdparty update instead of just modelica\n");
   print("\t--no3rdparty: do not update 3rdparty\n");
+  print("\t--ignoreUncommittedChanges: self explanatory\n");
   print("\t--debug: turn on debug mode\n");
   print("\t--help: print help\n");
   exit 1;

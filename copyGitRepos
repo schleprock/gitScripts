@@ -15,11 +15,13 @@ use Thread::Queue;
 my $scriptName = basename($0);
 
 my $destReposDir;
+my $srcReposDir;
 my $j;
 my $help;
 my $debugMode;
 
-GetOptions("destReposDir=s" => \$destReposDir, #destination directory
+GetOptions("destReposDir|d=s" => \$destReposDir, #destination directory
+           "srcReposDir=s" => \$srcReposDir,
            "j:i" => \$j, #run commands in parallel
            "debugMode" => \$debugMode, 
            "help|?" => \$help,
@@ -28,32 +30,36 @@ GetOptions("destReposDir=s" => \$destReposDir, #destination directory
 printHelp() if($help);
 
 sub printHelp {
-  print("\n$scriptName [-j [numb]] --destReposDir <dest> [--help|?]\n");
+  print("\n$scriptName [-j [numb]] --destReposDir <dest> ");
+  print("--srcReposDir [--help|?]\n");
   print("\t-j [numb]: run commands in parallel\n");
   print("\t--debugMode: turn on debugMode (off by default)\n");
   print("\nNOTE: you must create the destination dir.");
   print("\n\n");
   exit 1;
 }
-
 if(! defined($destReposDir)) {
-  print("ERROR: need a destination...\n");
+  print("ERROR: need a destination repos dir...\n");
   printHelp();
 }
-
+if(! defined($srcReposDir)) {
+  print("ERROR: need a src repos dir...\n");
+  printHelp();
+}
 my $pwd = cwd();
-
 if(! chdir($destReposDir)) {
   print("ERROR: could not cd to destReposDir: $destReposDir\n");
   printHelp();
 }
 my $destDirFull = cwd();
-print("\nINFO: Copying .git repos to $destDirFull\n\n");
-
-if(! chdir($pwd)) {
-  print("ERROR: can not chdir to $pwd\n");
+chdir($pwd);
+if(! chdir($srcReposDir)) {
+  print("ERROR: could not cd to srcReposDir: $srcReposDir\n");
   printHelp();
 }
+my $srcDirFull = cwd();
+
+print("\nINFO: Copying .git repos to from $srcDirFull to $destDirFull\n\n");
 
 my $failures = Thread::Queue->new();
 
@@ -88,6 +94,16 @@ sub run {
 my $fail = GitModules::runCmd(\&run, $j, $debugMode);
 
 if(!$fail) {
+  print("\nCopy successful. Performing git reset\n");
+  if(!chdir($destDirFull)) {
+    print("ERROR: could not cd to $destDirFull for git reset\n\n");
+    exit(2);
+  }
+  my $cmd = "gitRunCmd.pl -c 'git reset --hard HEAD'";
+  if(system($cmd)) {
+    print("ERROR: $cmd failed\n");
+    exit(3);
+  }
   print("\n$scriptName completed successfully\n\n");
   exit(0);
 }

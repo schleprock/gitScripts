@@ -71,21 +71,34 @@ sub run {
   }
   my $repoName = basename($here);
   print("\nRunning $scriptName in $here\n");
-  my $command = "mkdir ${destDirFull}/$repoName";
+  my $repoDir = "${destDirFull}/$repoName";
+  my $command = "mkdir ${repoDir}";
   print("Running command $command in $here.\n");
-  if(system($command)) {
-    my $err = "\nERROR: $command failed in $here,\n";
-    print("$err");
-    $failures->enqueue($err);
-    return(2);
-  }
-  $command = "cp -r $here/.git $destDirFull/$repoName";
-  print("Running command $command in $here.\n");
-  if(system($command)) {
-    my $err = "\nERROR: $command failed in $here,\n";
-    print("$err");
-    $failures->enqueue($err);
-    return(2);
+  if(-d $repoDir) {
+    print("WARNING: $repoDir already exists. Skipping\n");
+  } else {
+    if(system($command)) {
+      my $err = "\nERROR: $command failed in $here,\n";
+      print("$err");
+      $failures->enqueue($err);
+      return(2);
+    }
+    $command = "cp -r $here/.git $destDirFull/$repoName";
+    print("Running command $command in $here.\n");
+    if(system($command)) {
+      my $err = "\nERROR: $command failed in $here,\n";
+      print("$err");
+      $failures->enqueue($err);
+      return(2);
+    }
+    print("\nCopy successful. Performing git reset\n");
+    $command = "pushd $destDirFull/$repoName; git reset --hard HEAD; popd";
+    if(system($command)) {
+      my $err = "ERROR: $command failed in $here\n";
+      print("$err");
+      $failures->enqueue($err);
+      exit(3);
+    }
   }
   print("SUCCESS in $here\n");
   return(0);
@@ -94,16 +107,6 @@ sub run {
 my $fail = GitModules::runCmd(\&run, $j, $debugMode);
 
 if(!$fail) {
-  print("\nCopy successful. Performing git reset\n");
-  if(!chdir($destDirFull)) {
-    print("ERROR: could not cd to $destDirFull for git reset\n\n");
-    exit(2);
-  }
-  my $cmd = "gitRunCmd.pl -c 'git reset --hard HEAD'";
-  if(system($cmd)) {
-    print("ERROR: $cmd failed\n");
-    exit(3);
-  }
   print("\n$scriptName completed successfully\n\n");
   exit(0);
 }
